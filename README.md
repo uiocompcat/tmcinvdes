@@ -4,7 +4,7 @@
 
 <img align="center" src="concept_overview.png" alt="Inverse Design of Metal Complexes" width="800"/>
 
-Public repository for the preprint "Deep Generative Model for the Dual-Objective Inverse Design of Metal Complexes."
+Public repository for the preprint ["Deep Generative Model for the Dual-Objective Inverse Design of Metal Complexes."](https://doi.org/10.26434/chemrxiv-2024-mzs7b)
 
 ## Work in Progress
 
