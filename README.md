@@ -10,7 +10,9 @@ Public repository for the preprint ["Deep Generative Model for the Dual-Objectiv
 
 This repository represents work in progress, meaning that data and code will be gradually added. 
 
-One great way to stay informed is to make sure you are logged in to GitHub and then click the `Watch` button with the eye-icon, and choose appropriate options. For example, if only major updates are of interest: click `Watch` -> `Custom` -> check the box `Releases` -> `Apply`.
+One great way to stay informed is to make sure you are logged in to GitHub and then click the `Watch` button with the eye-icon, and choose appropriate options. 
+
+For example, if only major updates are of interest: click `Watch` -> `Custom` -> check the box `Releases` -> `Apply`.
 
 ## Datasets
 
