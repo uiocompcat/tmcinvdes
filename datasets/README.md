@@ -44,6 +44,7 @@ Note that the 14 major bullet points below correspond to the directories into wh
          - `uncond_mono-raw50k-novel.csv`
          - `uncond_bi-raw50k-novel.csv`
      - Columns:
+         - `Heavy atom count` (or `Atom count`) if monodentate (or bidentate), respectively: int
          - `Enriched SMILES`: str
          - `Canonical SMILES`: str
          - `Connection IDs`: int, list[int,[list[int]]]
