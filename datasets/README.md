@@ -122,9 +122,10 @@ Note that the 14 major bullet points below correspond to the directories into wh
          - `cond_mono-sampled_optimized-TMC.xyz`
          - *(`cond_bi_cis-sampled_optimized-TMC.xyz`)*
  - **13. Label ligands with DFT calculations on TMCs geometry optimizations, HOMO-LUMO gap, and metal center charge:** `-labeled` (re-used)
+     - We make the same unambiguous contraction for brevity, taking `-labeled` to mean `-TMC-labeled`.
      - Filenames:
-         - `cond_mono-sampled_optimized-TMC-labeled.csv`
-         - *(`cond_bi_cis-sampled_optimized-TMC-labeled.csv`)*
+         - `cond_mono-sampled_optimized-labeled.csv`
+         - *(`cond_bi_cis-sampled_optimized-labeled.csv`)*
     - Columns: same as the `-labeled.csv` files above at stage 7.
 
 
