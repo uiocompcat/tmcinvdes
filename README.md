@@ -8,10 +8,16 @@ Public repository for the preprint ["Deep Generative Model for the Dual-Objectiv
 
 The fork used to train the models can be found at: [FastJTNNpy3](https://github.com/Strandgaard96/FastJTNNpy3). All script used to train the models and perform conditional optimization can be found in the fork.
 
-## Work in Progress
+## Structure
+
+[Ligand generation](/tmcinvdes/ligand_generation)
+
+Contains the code used to create the JT-VAE training sets.
+
+[Quantum chemistry](/tmcinvdes/quantum_chemistry)
+
+Contains the ORCA input files and parser scripts to label the generated ligands
+
+### Work in Progress
 
 This repository represents work in progress, meaning that data and code will be gradually added.
-
-One great way to stay informed is to make sure you are logged in to GitHub and then click the `Watch` button with the eye-icon, and choose appropriate options.
-
-For example, if only major updates are of interest: click `Watch` -> `Custom` -> check the box `Releases` -> `Apply`.
