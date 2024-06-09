@@ -10,9 +10,10 @@ import uuid
 from rdkit import Chem
 from rdkit.Chem import rdDetermineBonds
 
-# NB this is for using a local installation of xyz2mol.
-# This is now build into RDKit and is not really needed.
-module_path = os.path.abspath("/home/magstr/git/xyz2mol/")
+# NB this is for using a local installation of xyz2mol. Fill in you own path
+# https://github.com/jensengroup/xyz2mol
+LOCAL_PATH_TO_XYZ2MOL = NON
+module_path = os.path.abspath(LOCAL_PATH_TO_XYZ2MOL)
 if module_path not in sys.path:
     sys.path.append(module_path)
 import xyz2mol as x2m
