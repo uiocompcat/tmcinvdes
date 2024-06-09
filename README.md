@@ -8,7 +8,9 @@ Public repository for the preprint ["Deep Generative Model for the Dual-Objectiv
 
 The fork used to train the models can be found at: [FastJTNNpy3](https://github.com/Strandgaard96/FastJTNNpy3). All script used to train the models and perform conditional optimization can be found in the fork.
 
-## Structure
+## Code
+
+All code should be run in a python environment defined by the [environment.yml](environment.yml) file.
 
 [Ligand generation](/tmcinvdes/ligand_generation)
 
