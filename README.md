@@ -6,7 +6,7 @@ Public repository for the preprint ["Deep Generative Model for the Dual-Objectiv
 
 <img align="center" src="concept_overview.png" alt="Inverse Design of Metal Complexes" width="800"/>
 
-The fork used to train the models can be found at: [FastJTNNpy3](https://github.com/Strandgaard96/FastJTNNpy3)
+The fork used to train the models can be found at: [FastJTNNpy3](https://github.com/Strandgaard96/FastJTNNpy3). All script used to train the models and perform conditional optimization can be found in the fork.
 
 ## Work in Progress
 
