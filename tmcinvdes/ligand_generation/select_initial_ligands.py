@@ -6,7 +6,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import xyz2mol_tm as x2m_tm
+import xyz2mol_functionality as x2m_tm
 from rdkit import Chem
 from utils import (
     attach_dummy_atom_to_coordinating_atoms,
