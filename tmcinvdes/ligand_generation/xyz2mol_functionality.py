@@ -1,21 +1,13 @@
 """Module doing xyz -> mol conversions using either build in RDKIt
 fucntionality or OpenBabel."""
 
-import os
 import subprocess
-import sys
 import time
 import uuid
 
 from rdkit import Chem
 from rdkit.Chem import rdDetermineBonds
 
-# NB this is for using a local installation of xyz2mol. Fill in you own path
-# https://github.com/jensengroup/xyz2mol
-LOCAL_PATH_TO_XYZ2MOL = NON
-module_path = os.path.abspath(LOCAL_PATH_TO_XYZ2MOL)
-if module_path not in sys.path:
-    sys.path.append(module_path)
 import xyz2mol as x2m
 
 TRANSITION_METALS = [

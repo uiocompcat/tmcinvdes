@@ -19,6 +19,7 @@ from utils import (
 )
 import swifter
 
+# Insert path where you have local tmQMg-L repo.
 ligands_stable_path = "/home/magstr/git/tmQMg-L/stable.csv"
 
 # load stable occurrences of ligands

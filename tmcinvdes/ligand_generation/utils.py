@@ -1,22 +1,24 @@
 import ast
 import json
+import os
 
 import numpy as np
 import pandas as pd
 from openbabel import openbabel
 from rdkit import Chem
 
-# paths to tmqmg-l files
-ligands_fingerprints = "/home/magstr/git/tmqmg-l/ligands_fingerprints.csv"
-ligands_misc = "/home/magstr/git/tmqmg-l/ligands_misc_info.csv"
-ligands_stable_path = "/home/magstr/git/tmQMg-L/stable.csv"
+# paths to tmqmg-l files. Change to your local path.
+LOCAL_tmQMg_l = "/home/magstr/git/tmQMg-L/"
+ligands_fingerprints = LOCAL_tmQMg_l + "ligands_fingerprints.csv"
+ligands_misc = LOCAL_tmQMg_l + "ligands_misc_info.csv"
+ligands_stable_path = LOCAL_tmQMg_l + "stable.csv"
 
 # load stable occurrences of ligands
 ligands_stable_df = pd.read_csv(ligands_stable_path, sep=";")
-ligands_xyz = "./home/magstr/git/tmQMg-L/xyz/ligands_xyzs.xyz"
+ligands_xyz = "/home/magstr/git/tmQMg-L/xyz/ligands_xyzs.xyz"
 
 
-def make_dict_xyz(query):
+def make_dict_xyz():
     """Create dict of from the single xyz ligand file.The keys in the dict will
     be the name of the TM for which the ligand xyz is found."""
 
@@ -27,14 +29,19 @@ def make_dict_xyz(query):
             xyzs[xyz.split("\n")[1]] = xyz
 
     # Write to didct
-    with open("ligand_dict_xyz.json", "w") as f:
+    with open("ligands_dict_xyz.json", "w") as f:
         json.dump(xyzs, f)
     print("Succesfully created the dict of stable ligand complexes")
 
 
 def load_ligand_xyz():
+
+    if not os.path.isfile("ligands_dict_xyz.json"):
+        print("Dict with ligand xyz coordinates does not excist. Creating it now")
+        make_dict_xyz()
+
     # load ligand xyz dict
-    with open("/home/magstr/git/xyz2mol_tm/ligands_dict_xyz.json", "r") as f:
+    with open("ligands_dict_xyz.json", "r") as f:
         xyzs = json.load(f)
 
     return xyzs
