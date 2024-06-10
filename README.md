@@ -11,6 +11,7 @@ The fork used to train the models can be found at: [FastJTNNpy3](https://github.
 ## Code
 
 All code should be run in a python environment defined by the [environment.yml](environment.yml) file.
+The code also relies on a local download of the [tmQMg-L](https://github.com/hkneiding/tmQMg-L.git) repository.
 
 [Ligand generation](/tmcinvdes/ligand_generation)
 
