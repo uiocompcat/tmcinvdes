@@ -1,0 +1,21 @@
+# ORCA input
+
+!PBE D4 def2-SVP PRINTGAP OPT
+# Number of cores
+%pal nprocs 12 end
+# RAM per core
+%maxcore 2048
+
+%output
+PrintLevel Normal
+end
+* xyzfile 1 1 complex_copy.xyz
+
+$new_job
+!PBE0 D4 def2-TZVP PRINTGAP
+%output
+PrintLevel Normal
+Print[ P_NatPop ] 1
+Print[ P_Hirshfeld ] 1
+end
+* xyzfile 1 1 orca.xyz
