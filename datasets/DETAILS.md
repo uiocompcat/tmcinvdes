@@ -135,7 +135,7 @@ Here is how we write a DataFrame to file:
 ```Python
 import pandas as pd
 
-df = pd.DataFrame(...) 
+df = pd.DataFrame(...)
 
 filepath = "foo"
 df.to_csv(filepath, header=True, index=False)

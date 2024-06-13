@@ -5,10 +5,9 @@ import subprocess
 import time
 import uuid
 
+import xyz2mol as x2m
 from rdkit import Chem
 from rdkit.Chem import rdDetermineBonds
-
-import xyz2mol as x2m
 
 TRANSITION_METALS = [
     "Sc",

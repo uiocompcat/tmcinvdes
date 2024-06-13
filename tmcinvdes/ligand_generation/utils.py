@@ -1,6 +1,7 @@
 import ast
 import json
 import os
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -8,37 +9,34 @@ from openbabel import openbabel
 from rdkit import Chem
 
 # paths to tmqmg-l files. Change to your local path.
-LOCAL_tmQMg_l = "/home/magstr/git/tmQMg-L/"
-ligands_fingerprints = LOCAL_tmQMg_l + "ligands_fingerprints.csv"
-ligands_misc = LOCAL_tmQMg_l + "ligands_misc_info.csv"
-ligands_stable_path = LOCAL_tmQMg_l + "stable.csv"
+# LOCAL_tmQMg_l = "/home/magstr/git/tmQMg-L/"
+# ligands_fingerprints = LOCAL_tmQMg_l + "ligands_fingerprints.csv"
+# ligands_misc = LOCAL_tmQMg_l + "ligands_misc_info.csv"
+# ligands_stable_path = LOCAL_tmQMg_l + "stable.csv"
 
 # load stable occurrences of ligands
-ligands_stable_df = pd.read_csv(ligands_stable_path, sep=";")
-ligands_xyz = "/home/magstr/git/tmQMg-L/xyz/ligands_xyzs.xyz"
+# ligands_stable_df = pd.read_csv(ligands_stable_path, sep=";")
+# ligands_xyz = "/home/magstr/git/tmQMg-L/xyz/ligands_xyzs.xyz"
 
 
-def make_dict_xyz():
+def make_dict_xyz(ligand_xyzs_path: Path):
     """Create dict of from the single xyz ligand file.The keys in the dict will
     be the name of the TM for which the ligand xyz is found."""
 
-    # load xyzs
     xyzs = {}
-    with open(ligands_xyz, "r") as fh:
+    with open(ligand_xyzs_path, "r") as fh:
         for xyz in fh.read().split("\n\n"):
             xyzs[xyz.split("\n")[1]] = xyz
 
-    # Write to didct
     with open("ligands_dict_xyz.json", "w") as f:
         json.dump(xyzs, f)
     print("Succesfully created the dict of stable ligand complexes")
 
 
-def load_ligand_xyz():
-
+def load_ligand_xyz(ligand_xyzs_path: Path):
     if not os.path.isfile("ligands_dict_xyz.json"):
-        print("Dict with ligand xyz coordinates does not excist. Creating it now")
-        make_dict_xyz()
+        print("Dict with ligand xyz coordinates does not excist. Creating it now.")
+        make_dict_xyz(ligand_xyzs_path)
 
     # load ligand xyz dict
     with open("ligands_dict_xyz.json", "r") as f:
@@ -48,7 +46,7 @@ def load_ligand_xyz():
 
 
 def get_smiles_openbabel_hannes(xyz: str):
-    """Gets the SMILES string of a given xyz structure using Hannes openbabel
+    """Gets the SMILES string of a given xyz structure using Hannes' Open Babel
     method that was used to obtain smiles in tmQMg-L.
 
     Arguments:
@@ -80,7 +78,7 @@ def get_monodentate(df, df2, charge=0):
 
 
 def get_bidentate(df, df2, charge=0):
-    "Get df of neutral mono and bidentates"
+    "Get dataframe of neutral monodentates and bidentates."
     df2["charge"] = df["charge"]
     # mono_mask = (df["n_metal_bound"] == 1) & (df["n_dentic_bound"] == 1)
     bi_mask = (df["n_metal_bound"] == 2) & (df["n_dentic_bound"] == 2)
@@ -89,26 +87,24 @@ def get_bidentate(df, df2, charge=0):
     return monodentate
 
 
-def get_stable_occ(name):
+def get_stable_occ(name: str, df_stable: pd.DataFrame):
     "Get string of stable occurence label for a ligand"
-    stable_oc = ligands_stable_df[ligands_stable_df["name"] == name][
-        "stable_occurrence_name"
-    ].item()
+    stable_oc = df_stable[df_stable["name"] == name]["stable_occurrence_name"].item()
     return stable_oc
 
 
-def get_id(row):
+def get_id(row, df_stable):
     "Extract the connection id of ligand as list where id can be accessed"
-    stable_oc = get_stable_occ(row["name"])
+    stable_oc = get_stable_occ(row["name"], df_stable)
     res = row["metal_bond_node_idx_groups"]
     ocs = ast.literal_eval(res)
     id = ocs[stable_oc]
     return id
 
 
-def get_connect_id(row):
+def get_connect_id(row, df_stable):
     "Wrapper func. Not sure this is used"
-    connect_id = get_id(row)
+    connect_id = get_id(row, df_stable)
     return int(connect_id)
 
 
@@ -220,7 +216,7 @@ def attach_dummy_atom_to_coordinating_atoms(row, element="Ir", joint=False):
 
 
 def get_smiles_donor_id(mol):
-    "Get the smiles and mapped atom numbering for mol object"
+    "Get the SMILES and mapped atom numbering for Mol object"
     mol = Chem.RemoveHs(mol)
     smi = Chem.MolToSmiles(mol)
     order = eval(mol.GetProp("_smilesAtomOutputOrder"))
@@ -238,7 +234,7 @@ def prune_num_atoms(mol, num=None):
             if not mol:
                 return None
         except Exception as e:
-            print("Mol from smiles failed with error: ")
+            print("Mol from SMILES failed with error: ")
             print(e)
             return None
     try:
@@ -272,11 +268,11 @@ def single_atom_remover(mol, idx):
     """Function that removes an atom at specified idx.
 
     Args:
-        mol (Chem.rdchem.Mol): The mol to remove substruct on
-        idx (iont): idx of atom to remove from the input mol
+        mol (Chem.rdchem.Mol): The Mol to remove substruct on
+        idx (iont): idx of atom to remove from the input Mol
 
     Returns:
-        Chem.rdchem.Mol: The ouput mol with the atom removed
+        Chem.rdchem.Mol: The ouput Mol with the atom removed
     """
     res = Chem.RWMol(mol)
     res.BeginBatchEdit()
@@ -323,7 +319,7 @@ def process_substitute_attachment_points(mol):
 
 
 def read_file(file_name, num_mols):
-    """Read smiles from file and return mol generator."""
+    """Read smiles from file and return Mol generator."""
     mols = []
     with open(file_name, "r") as file:
         for i, smiles in enumerate(file):

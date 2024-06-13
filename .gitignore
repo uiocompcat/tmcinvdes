@@ -1,2 +1,8 @@
 datasets/*.ipynb
 **/.ipynb_checkpoints/
+**/*.pyc
+tmcinvdes/ligand_generation/ligands_dict_xyz.json
+tmp_results/
+.ruff_cache
+tmcinvdes/ligand_generation/nul
+tmcinvdes/ligand_generation/run.out
