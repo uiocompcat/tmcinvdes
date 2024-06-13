@@ -166,8 +166,14 @@ if __name__ == "__main__":
     # Get denticity-specific Dataframe from tmQMg-L
     if denticity == "monodentate":
         df = get_monodentate(df_fingerprints, df_misc)
+        output_csv_path = os.path.join(args.output_dir, "tmQMg-L_mono.csv")
+        output_txt_path = os.path.join(args.output_dir, "tmQMg-L_mono.txt")
+        core_element = "Li"
     elif denticity == "bidentate":
         df = get_bidentate(df_fingerprints, df_misc)
+        output_csv_path = os.path.join(args.output_dir, "tmQMg-L_bi.csv")
+        output_txt_path = os.path.join(args.output_dir, "tmQMg-L_bi.txt")
+        core_element = "Ir"
 
     # Sample for debugging
     if args.debug:
@@ -184,15 +190,17 @@ if __name__ == "__main__":
     print(f"Total time: {end-start}")
     print(mols[0:10])
 
-    mol = [x[0] if x is not None else None for x in mols]
+    mol_objects = [x[0] if x is not None else None for x in mols]
     connect_id = [x[1] if x is not None else None for x in mols]
-    df["custom_mol"] = mol
+    canon_smile = [Chem.MolToSmiles(x) if x is not None else None for x in mol_objects]
+    df["custom_mol"] = mol_objects
     df["connect_id"] = connect_id
+    df["Canonical SMILES"] = canon_smile
     df.dropna(inplace=True)
     df["enriched_mol"] = df.apply(
         attach_dummy_atom_to_coordinating_atoms,
         axis=1,
-        element="Li",
+        element=core_element,
         joint=True,
     )
     df.dropna(subset=["enriched_mol"], inplace=True)
@@ -215,10 +223,6 @@ if __name__ == "__main__":
         "ligand17783-0",
         "ligand19660-0",
         "ligand24383-0",
-    ]
-
-    # Maybe additional discards?
-    reproduced_excess = [
         "ligand1994-1",
         "ligand3740-0",
         "ligand4236-0",
@@ -228,12 +232,66 @@ if __name__ == "__main__":
         "ligand30860-0",
         "ligand31507-0",
         "ligand31574-0",
+        "ligand1094-0",
+        "ligand2892-0",
+        "ligand3205-0",
+        "ligand3417-0",
+        "ligand3447-0",
+        "ligand3630-0",
+        "ligand3925-0",
+        "ligand3934-0",
+        "ligand4536-0",
+        "ligand4667-0",
+        "ligand5265-0",
+        "ligand5277-0",
+        "ligand5950-0",
+        "ligand6114-0",
+        "ligand6301-0",
+        "ligand8713-0",
+        "ligand9771-0",
+        "ligand10149-0",
+        "ligand10238-0",
+        "ligand10764-0",
+        "ligand10829-0",
+        "ligand14477-0",
+        "ligand14836-0",
+        "ligand14896-0",
+        "ligand16128-0",
+        "ligand17094-0",
+        "ligand18362-0",
+        "ligand19161-0",
+        "ligand19780-0",
+        "ligand20777-0",
+        "ligand20835-0",
+        "ligand21505-0",
+        "ligand23404-0",
+        "ligand23522-0",
+        "ligand24427-0",
+        "ligand25009-0",
+        "ligand25467-0",
+        "ligand25510-0",
+        "ligand25515-0",
+        "ligand26223-0",
+        "ligand28459-0",
+        "ligand29261-0",
+        "ligand30104-0",
+        "ligand31443-0",
+        "ligand31878-0",
     ]
-    reproduced_deficit = ["ligand25836-0"]  # Failed to reproduce this one.
-    #
 
     # Drop all rows that represent manually discarded ligands.
     df = df.drop(df[df["name"].isin(manual_discard)].index)
-    df = df.drop(df[df["name"].isin(reproduced_excess)].index)
+    df = df.rename(
+        columns={
+            "name": "tmQMg-L ligand ID",
+            "Canonical SMILES": "Canonical SMILES",
+            "connect_id": "Connection IDs",
+            "enriched_smiles": "Enriched SMILES",
+        }
+    )
+    df = df[
+        ["tmQMg-L ligand ID", "Canonical SMILES", "Connection IDs", "Enriched SMILES"]
+    ]
 
-    df.to_csv(args.output_dir / f"train_{denticity}.csv", index=False)
+    df.to_csv(output_csv_path, index=False)
+    df["Enriched SMILES"].to_csv(output_txt_path, header=False, index=False)
