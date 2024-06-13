@@ -55,20 +55,6 @@ def read_file(file_name, num_mols):
     return mols
 
 
-def setChiralTagAndOrder(atom, chiralTag, chiralPermutation=None):
-    """Sets the chiral tag of an atom and the permutation order of attached
-    ligands. These tags are used in RDKit embedding into 3D structures.
-
-    Args:
-    atom (Chem.Atom): Atom for which to set the chiral tag/permutation order properties
-    chiralTag (Chem.rdchem.ChiralType, optional): Chiral Tag of Metal Atom. Defaults to None.
-    permutationOrder (int, optional): Permutation order of ligands. Defaults to None.
-    """
-    atom.SetChiralTag(chiralTag)
-    if chiralPermutation:
-        atom.SetIntProp("_chiralPermutation", chiralPermutation)
-
-
 def shell(cmd, shell=False):
     "Utility function to run shell commands"
     if shell:
