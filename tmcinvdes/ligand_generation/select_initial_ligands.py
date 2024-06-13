@@ -1,4 +1,7 @@
 import argparse
+
+# from itertools import repeat
+# from functools import partial
 import multiprocessing as mp
 import os
 import time
@@ -6,6 +9,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import swifter  # ruff: noqa: F401
 import xyz2mol_functionality as x2m_tm
 from rdkit import Chem
 from utils import (
@@ -17,13 +21,6 @@ from utils import (
     load_ligand_xyz,
     prune_num_atoms,
 )
-import swifter
-
-# Insert path where you have local tmQMg-L repo.
-ligands_stable_path = "/home/magstr/git/tmQMg-L/stable.csv"
-
-# load stable occurrences of ligands
-ligands_stable_df = pd.read_csv(ligands_stable_path, sep=";")
 
 
 def parse_args(arg_list: list = None) -> argparse.Namespace:
@@ -60,19 +57,19 @@ def parse_args(arg_list: list = None) -> argparse.Namespace:
         type=Path,
         required=True,
         default=".",
-        help="""Output dir for training CSV file""",
+        help="""Output directory for training CSV file""",
     )
     parser.add_argument("--debug", action="store_true")
 
     return parser.parse_args(arg_list)
 
 
-def ligand_xyz_to_mol(row):
+def ligand_xyz_to_mol(row: tuple, df_stable):
     """Function used to obtain ligand mol objects. The input is a row from a
     dataframe of the tmQMg-L dataset. It was used as a pandas apply function.
 
     Args:
-        row : pandas dataframe row
+        row (tuple): a row of a Pandas dataframe constructed from tmQMg-L CSV files.
 
     Returns:
         mol : RDKit mol object
@@ -80,11 +77,11 @@ def ligand_xyz_to_mol(row):
         stable_occ : Label of most stable ligand xyz file
     """
     row = row[1]
-    connect_ids = get_id(row)
+    connect_ids = get_id(row, df_stable)
     #
     for elem in connect_ids:
         connect_id = elem[0]
-        stable_occ = get_stable_occ(row["name"])
+        stable_occ = get_stable_occ(row["name"], df_stable)
 
         xyz = ligand_xyzs[stable_occ]
 
@@ -148,8 +145,8 @@ def ligand_xyz_to_mol(row):
 
 
 if __name__ == "__main__":
-    global ligand_xyzs
-    ligand_xyzs = load_ligand_xyz()
+    # global ligand_xyzs
+    # ligand_xyzs = load_ligand_xyz()
 
     args = parse_args()
     denticity = args.denticity
@@ -163,11 +160,13 @@ if __name__ == "__main__":
     )
     df_misc = pd.read_csv(os.path.join(input_dir, "ligands_misc_info.csv"), sep=";")
     df_stable = pd.read_csv(os.path.join(input_dir, "stable.csv"), sep=";")
+    ligand_xyzs_path = os.path.join(input_dir, "xyz", "ligands_xyzs.xyz")
+    ligand_xyzs = load_ligand_xyz(ligand_xyzs_path)
 
-    # Get mono or bidentate dataframe from tmQMg
+    # Get denticity-specific Dataframe from tmQMg-L
     if denticity == "monodentate":
         df = get_monodentate(df_fingerprints, df_misc)
-    if denticity == "bidentate":
+    elif denticity == "bidentate":
         df = get_bidentate(df_fingerprints, df_misc)
 
     # Sample for debugging
@@ -176,7 +175,11 @@ if __name__ == "__main__":
 
     start = time.time()
     with mp.Pool(mp.cpu_count()) as pool:
-        mols = pool.map(ligand_xyz_to_mol, [row for row in df.iterrows()])
+        # df_stable = pd.read_csv(os.path.join(input_dir, "stable.csv"), sep=";")
+        # partial_ligand_xyz_to_mol = partial(ligand_xyz_to_mol, df_stable=df_stable)
+        mols = pool.starmap(
+            ligand_xyz_to_mol, [(row, df_stable) for row in df.iterrows()]
+        )
     end = time.time()
     print(f"Total time: {end-start}")
     print(mols[0:10])
@@ -202,7 +205,7 @@ if __name__ == "__main__":
     smi = [Chem.MolToSmiles(x) for x in mols]
     df["enriched_smiles"] = smi
 
-    # These were manually discarded
+    # These ligands were manually discarded:
     manual_discard = [
         "ligand5249-0",
         "ligand9550-0",
@@ -214,7 +217,23 @@ if __name__ == "__main__":
         "ligand24383-0",
     ]
 
-    # drop all rows that contain 'Coca Cola'
+    # Maybe additional discards?
+    reproduced_excess = [
+        "ligand1994-1",
+        "ligand3740-0",
+        "ligand4236-0",
+        "ligand13618-0",
+        "ligand20893-0",
+        "ligand30481-0",
+        "ligand30860-0",
+        "ligand31507-0",
+        "ligand31574-0",
+    ]
+    reproduced_deficit = ["ligand25836-0"]  # Failed to reproduce this one.
+    #
+
+    # Drop all rows that represent manually discarded ligands.
     df = df.drop(df[df["name"].isin(manual_discard)].index)
+    df = df.drop(df[df["name"].isin(reproduced_excess)].index)
 
     df.to_csv(args.output_dir / f"train_{denticity}.csv", index=False)
