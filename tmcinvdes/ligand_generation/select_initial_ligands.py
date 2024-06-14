@@ -22,6 +22,9 @@ from utils import (
     prune_num_atoms,
 )
 
+# Current file location to ensure paths do not break.
+__location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+
 
 def parse_args(arg_list: list = None) -> argparse.Namespace:
     """Parse arguments from command line.
@@ -213,74 +216,11 @@ if __name__ == "__main__":
     smi = [Chem.MolToSmiles(x) for x in mols]
     df["enriched_smiles"] = smi
 
-    # These ligands were manually discarded:
-    manual_discard = [
-        "ligand5249-0",
-        "ligand9550-0",
-        "ligand11200-0",
-        "ligand11246-0",
-        "ligand13615-0",
-        "ligand17783-0",
-        "ligand19660-0",
-        "ligand24383-0",
-        "ligand1994-1",
-        "ligand3740-0",
-        "ligand4236-0",
-        "ligand13618-0",
-        "ligand20893-0",
-        "ligand30481-0",
-        "ligand30860-0",
-        "ligand31507-0",
-        "ligand31574-0",
-        "ligand1094-0",
-        "ligand2892-0",
-        "ligand3205-0",
-        "ligand3417-0",
-        "ligand3447-0",
-        "ligand3630-0",
-        "ligand3925-0",
-        "ligand3934-0",
-        "ligand4536-0",
-        "ligand4667-0",
-        "ligand5265-0",
-        "ligand5277-0",
-        "ligand5950-0",
-        "ligand6114-0",
-        "ligand6301-0",
-        "ligand8713-0",
-        "ligand9771-0",
-        "ligand10149-0",
-        "ligand10238-0",
-        "ligand10764-0",
-        "ligand10829-0",
-        "ligand14477-0",
-        "ligand14836-0",
-        "ligand14896-0",
-        "ligand16128-0",
-        "ligand17094-0",
-        "ligand18362-0",
-        "ligand19161-0",
-        "ligand19780-0",
-        "ligand20777-0",
-        "ligand20835-0",
-        "ligand21505-0",
-        "ligand23404-0",
-        "ligand23522-0",
-        "ligand24427-0",
-        "ligand25009-0",
-        "ligand25467-0",
-        "ligand25510-0",
-        "ligand25515-0",
-        "ligand26223-0",
-        "ligand28459-0",
-        "ligand29261-0",
-        "ligand30104-0",
-        "ligand31443-0",
-        "ligand31878-0",
-    ]
+    with open(os.path.join(__location__, "discarded_ligand_ids.txt"), "r") as f:
+        discard_ligands = f.read().splitlines()
 
     # Drop all rows that represent manually discarded ligands.
-    df = df.drop(df[df["name"].isin(manual_discard)].index)
+    df = df.drop(df[df["name"].isin(discard_ligands)].index)
     df = df.rename(
         columns={
             "name": "tmQMg-L ligand ID",
