@@ -190,8 +190,6 @@ def attach_dummy_atom_to_coordinating_atoms(row, element="Ir", joint=False):
             alternate_idxs.append(idx)
             emol.AddBond(int(connect_id), idx, mapper[type_match]["bond_type"])
 
-    # Now bound alternate bond types to the generic atom
-
     # Decide wether to connect everything on the same Irridium
     if joint:
         if alternate_idxs and len(type_matches) > 1:
