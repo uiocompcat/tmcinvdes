@@ -1,9 +1,35 @@
-datasets/*.ipynb
-**/.ipynb_checkpoints/
-**/*.pyc
-tmcinvdes/ligand_generation/ligands_dict_xyz.json
+# General Temporary Files
 tmp_notebooks/
 tmp_results/
-.ruff_cache
+
+# Caches, Checkpoints, and Logfiles
+**/*.pyc
+**/__pycache__/
+**/.ibynb_checkpoints
+**/*-log.out
+**/.~lock*
+.temp/
+CLIinput.inp
+**/Runs/
+logs/
+bash/sbatch_*
+**/nohup.out
+job-*.*
+
+# Initial Ligand Selection Files
+tmcinvdes/ligand_generation/ligands_dict_xyz.json
 tmcinvdes/ligand_generation/nul
 tmcinvdes/ligand_generation/run.out
+
+# Environment Installation Files
+environment/xtb-6.4.1
+environment/stda_v1.6.3
+environment/g_spec
+environment/xtb4stda
+environment/xtb
+**/molsimp_local/
+
+# Configuration Files
+.ruff_cache/
+.conda/
+.vs_code/

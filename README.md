@@ -6,11 +6,11 @@ Public repository for the preprint ["Deep Generative Model for the Dual-Objectiv
 
 <img align="center" src="concept_overview.png" alt="Inverse Design of Metal Complexes" width="800"/>
 
-The fork used to train the models can be found at: [FastJTNNpy3](https://github.com/Strandgaard96/FastJTNNpy3). All script used to train the models and perform conditional optimization can be found in the fork.
+The fork used to train the JT-VAE models can be found at: [FastJTNNpy3](https://github.com/Strandgaard96/FastJTNNpy3). All the scripts used to train the models, generate ligands, and perform conditional optimization can be found in that fork.
 
 ## Code
 
-All code should be run in a python environment defined by the [environment.yml](environment.yml) file.
+Follow the environment [setup instructions](/environment/README.md) to install all the dependencies of the code in this repository.
 The code also relies on a local download of the [tmQMg-L](https://github.com/hkneiding/tmQMg-L.git) repository.
 
 [Ligand generation](/tmcinvdes/ligand_generation)
