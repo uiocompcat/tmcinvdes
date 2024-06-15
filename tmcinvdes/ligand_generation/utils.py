@@ -242,7 +242,7 @@ def prune_num_atoms(mol, num=None):
         print(e)
         return None
 
-    # Remove the weirs SIs
+    # Remove the weird SIs
     smart = Chem.MolFromSmarts("[Li]<-[Si]")
     if mol.GetSubstructMatch(smart):
         return None
@@ -267,7 +267,7 @@ def single_atom_remover(mol, idx):
 
     Args:
         mol (Chem.rdchem.Mol): The Mol to remove substruct on
-        idx (iont): idx of atom to remove from the input Mol
+        idx (int): idx of atom to remove from the input Mol
 
     Returns:
         Chem.rdchem.Mol: The ouput Mol with the atom removed

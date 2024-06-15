@@ -289,7 +289,7 @@ dependencies:
   - qt-main=5.15.8
   - qtconsole-base=5.4.4
   - qtpy=2.4.0
-  - rdkit=2023.09.1
+  - rdkit=2023.03.3
   - re2=2023.03.02
   - readline=8.2
   - referencing=0.30.2
