@@ -44,17 +44,6 @@ TRANSITION_METALS = [
 ]
 
 
-def read_file(file_name, num_mols):
-    """Read smiles from file."""
-    mols = []
-    with open(file_name, "r") as file:
-        for i, smiles in enumerate(file):
-            mols.append(smiles.rstrip())
-            if i == num_mols:
-                break
-    return mols
-
-
 def shell(cmd, shell=False):
     "Utility function to run shell commands"
     if shell:

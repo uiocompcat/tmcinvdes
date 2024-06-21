@@ -1,9 +1,7 @@
-""" Script for obtaining SMILES representations of tmQMg-L ligands 
-used for training the JT-VAE
-"""
+"""Script for obtaining SMILES representations of tmQMg-L ligands used for
+training the JT-VAE."""
 
 import argparse
-
 import multiprocessing as mp
 import os
 import time
@@ -17,7 +15,7 @@ from rdkit import Chem
 from utils import (
     attach_dummy_atom_to_coordinating_atoms,
     get_bidentate,
-    get_id,
+    get_connection_ids,
     get_monodentate,
     get_stable_occ,
     load_ligand_xyz,
@@ -82,7 +80,7 @@ def ligand_xyz_to_mol(row: tuple, df_stable):
         stable_occ : Label of most stable ligand xyz file
     """
     row = row[1]
-    connect_ids = get_id(row, df_stable)
+    connect_ids = get_connection_ids(row, df_stable)
 
     stable_occ = get_stable_occ(row["name"], df_stable)
 
@@ -155,7 +153,6 @@ def ligand_xyz_to_mol(row: tuple, df_stable):
 
 
 if __name__ == "__main__":
-
     args = parse_args()
     denticity = args.denticity
 
