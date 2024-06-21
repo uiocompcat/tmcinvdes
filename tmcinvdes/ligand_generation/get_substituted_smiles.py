@@ -1,7 +1,9 @@
+""" Script for obtaining SMILES representations of tmQMg-L ligands 
+used for training the JT-VAE
+"""
+
 import argparse
 
-# from itertools import repeat
-# from functools import partial
 import multiprocessing as mp
 import os
 import time
@@ -81,66 +83,71 @@ def ligand_xyz_to_mol(row: tuple, df_stable):
     """
     row = row[1]
     connect_ids = get_id(row, df_stable)
-    #
-    for elem in connect_ids:
-        connect_id = elem[0]
-        stable_occ = get_stable_occ(row["name"], df_stable)
 
-        xyz = ligand_xyzs[stable_occ]
+    stable_occ = get_stable_occ(row["name"], df_stable)
 
-        if isinstance(row["charge"], np.integer):
-            charge = row["charge"].item()
-        else:
-            charge = row["charge"]
+    xyz = ligand_xyzs[stable_occ]
 
-        # Check if we can get smiles from tmQMg-L SMILES
-        try:
-            m = Chem.MolFromSmiles(row["smiles"])
-            if not m:
-                return None
-        except Exception:
+    # There is a bug with the charge column that changes its type
+    if isinstance(row["charge"], np.integer):
+        charge = row["charge"].item()
+    else:
+        charge = row["charge"]
+
+    # Check if we can get mol object from tmQMg-L SMILES
+    try:
+        m = Chem.MolFromSmiles(row["smiles"])
+        if not m:
+            # If not, we assume the ligand is an edge case and discard
+            return None
+    except Exception:
+        return None
+
+    # Check for radical. If it contains radicals, we probably need xyz2mol.
+    flag = False
+    for atom in m.GetAtoms():
+        if atom.GetNumRadicalElectrons() == 1:
+            flag = True
+
+    if flag:
+        mol = x2m_tm.get_mol(xyz, charge=charge)
+
+    # Check for carbenes.
+    elif m.GetSubstructMatch(
+        Chem.MolFromSmarts("[#6&v2H0,#6&v3H0]")
+    ) or m.GetSubstructMatch(Chem.MolFromSmarts("[#14&v2H0]")):
+        print("babel")
+        mol = x2m_tm.get_mol_pure_babel(xyz, charge=charge)
+    # Ligands with these elements get better SMILES with OpenBabel
+    elif any(x in row["smiles"] for x in ["As", "Se", "p", "P"]):
+        mol = x2m_tm.get_mol_pure_babel(xyz, charge=charge)
+    else:
+        mol = x2m_tm.get_mol(xyz, charge=charge)
+    if not mol:
+        return None
+
+    # If there are still radicals present discard ligand
+    for atom in mol.GetAtoms():
+        if atom.GetNumRadicalElectrons() == 1:
             return None
 
-        # Check for radical. If it contains radicals, we probably need xyz2mol.
-        flag = False
-        for atom in m.GetAtoms():
-            if atom.GetNumRadicalElectrons() == 1:
-                flag = True
-
-        if flag:
-            mol = x2m_tm.get_mol(xyz, charge=charge)
-
-        # Check for carbene, that should not be a radical.
-        elif m.GetSubstructMatch(
-            Chem.MolFromSmarts("[#6&v2H0,#6&v3H0]")
-        ) or m.GetSubstructMatch(Chem.MolFromSmarts("[#14&v2H0]")):
-            print("babel")
-            mol = x2m_tm.get_mol_pure_babel(xyz, charge=charge)
-        elif any(x in row["smiles"] for x in ["As", "Se", "p", "P"]):
-            mol = x2m_tm.get_mol_pure_babel(xyz, charge=charge)
-        else:
-            mol = x2m_tm.get_mol(xyz, charge=charge)
-        if not mol:
-            return None
-
-        # If there are still radicals present,
-        for atom in mol.GetAtoms():
-            if atom.GetNumRadicalElectrons() == 1:
-                # filtered_stuff['radicals_after_mol'].append(row['name'])
-                return None
-
-        connect_atom = mol.GetAtomWithIdx(connect_id)
+    # Check the valency of coordinating atoms
+    for connect_id in connect_ids:
+        connect_atom = mol.GetAtomWithIdx(connect_id[0])
         id = connect_atom.GetIdx()
 
         valence = mol.GetAtomWithIdx(id).GetExplicitValence()
 
+        # P with 5 bonds is assumed to be an edge case and discarded
         if connect_atom.GetSymbol() == "P":
             if valence > 4:
                 return None
 
+        # Prevent pentavelent coordinating carbons.
         if connect_atom.GetSymbol() == "C":
             if valence > 3:
                 return None
+            # Anionic carbons are discarded
             if connect_atom.GetFormalCharge() == -1:
                 return None
 
@@ -148,8 +155,6 @@ def ligand_xyz_to_mol(row: tuple, df_stable):
 
 
 if __name__ == "__main__":
-    # global ligand_xyzs
-    # ligand_xyzs = load_ligand_xyz()
 
     args = parse_args()
     denticity = args.denticity
@@ -157,12 +162,16 @@ if __name__ == "__main__":
     args.output_dir.mkdir(exist_ok=True, parents=True)
 
     input_dir = os.path.abspath(args.input_dir)
+
+    # Load tmQMg-L data
     df_desc = pd.read_csv(os.path.join(input_dir, "ligands_descriptors.csv"), sep=";")
     df_fingerprints = pd.read_csv(
         os.path.join(input_dir, "ligands_fingerprints.csv"), sep=";"
     )
     df_misc = pd.read_csv(os.path.join(input_dir, "ligands_misc_info.csv"), sep=";")
     df_stable = pd.read_csv(os.path.join(input_dir, "stable.csv"), sep=";")
+
+    # Load dictionary of ligand xyz coordinates
     ligand_xyzs_path = os.path.join(input_dir, "xyz", "ligands_xyzs.xyz")
     ligand_xyzs = load_ligand_xyz(ligand_xyzs_path)
 
@@ -184,8 +193,6 @@ if __name__ == "__main__":
 
     start = time.time()
     with mp.Pool(mp.cpu_count()) as pool:
-        # df_stable = pd.read_csv(os.path.join(input_dir, "stable.csv"), sep=";")
-        # partial_ligand_xyz_to_mol = partial(ligand_xyz_to_mol, df_stable=df_stable)
         mols = pool.starmap(
             ligand_xyz_to_mol, [(row, df_stable) for row in df.iterrows()]
         )
@@ -234,4 +241,5 @@ if __name__ == "__main__":
     ]
 
     df.to_csv(output_csv_path, index=False)
+    # Created enriched SMILES training file
     df["Enriched SMILES"].to_csv(output_txt_path, header=False, index=False)
