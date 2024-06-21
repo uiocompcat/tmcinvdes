@@ -76,7 +76,7 @@ def shell(cmd, shell=False):
 
 
 def get_connect_mol(xyz):
-    "Get adjacency matrix"
+    "Get connectivity graph from huckel calculation"
     raw_mol = Chem.MolFromXYZBlock(xyz)
     mol = Chem.Mol(raw_mol)
     rdDetermineBonds.DetermineConnectivity(mol, useHueckel=True)
@@ -110,8 +110,8 @@ def get_mol(xyz, charge):
 def get_mol_pure_babel(xyz, charge):
     "Use commandline version of openbabel to get final mol"
 
-    # Create unique string. In this was the functions can be called in parallel and write in
-    # the same directory without intertwining
+    # Create unique string. In this way the functions can be called in parallel and write in
+    # the same directory without intertwining with other threads.
     unique_identifier = uuid.uuid4()
 
     raw_mol = Chem.MolFromXYZBlock(xyz)
@@ -158,7 +158,9 @@ def get_mol_babel(xyz, charge):
         + f"{unique_identifier}_test.xyz -O {unique_identifier}_test.sdf"
     )
     _ = shell(cmd, shell=False)
+
     time.sleep(0.1)  # time needed to finish writing file
+
     suppl = Chem.SDMolSupplier(
         f"{unique_identifier}_test.sdf", removeHs=False, sanitize=False
     )
@@ -177,7 +179,7 @@ def get_mol_babel(xyz, charge):
     new_mol = x2m.get_proto_mol(atoms)
 
     try:
-        # reconstruct the molecule from adjacent matrix, atoms and total charge
+        # Get mol object with bond order based on connectivity, atoms and total charge
         new_mols = x2m.AC2mol(
             new_mol, adjacent_matrix, atoms, charge, charged_fragments, quick
         )
@@ -186,9 +188,7 @@ def get_mol_babel(xyz, charge):
         return None
     if new_mols and "." not in Chem.MolToSmiles(new_mols[0]):
         new_mol = new_mols[0]
-        # Optional embedding of molecule. Will slow down function significantly
-        # rdDistGeom.EmbedMolecule(new_mol, useRandomCoords=True, maxAttempts=10)
         return new_mol
     else:
-        print("Failed babel")
+        print("xyz2mol failed with OpenBabel connectivity")
         return None
