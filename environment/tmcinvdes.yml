@@ -371,7 +371,7 @@ dependencies:
   - xorg-xextproto=7.3.0
   - xorg-xf86vidmodeproto=2.3.1
   - xorg-xproto=7.0.31
-  - xtb=6.6.1
+  - xtb=6.4.1
   - xz=5.2.6
   - yaml=0.2.5
   - yarl=1.9.2
