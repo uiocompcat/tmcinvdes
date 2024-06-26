@@ -8,20 +8,13 @@ import pandas as pd
 from openbabel import openbabel
 from rdkit import Chem
 
-# paths to tmqmg-l files. Change to your local path.
-# LOCAL_tmQMg_l = "/home/magstr/git/tmQMg-L/"
-# ligands_fingerprints = LOCAL_tmQMg_l + "ligands_fingerprints.csv"
-# ligands_misc = LOCAL_tmQMg_l + "ligands_misc_info.csv"
-# ligands_stable_path = LOCAL_tmQMg_l + "stable.csv"
-
-# load stable occurrences of ligands
-# ligands_stable_df = pd.read_csv(ligands_stable_path, sep=";")
-# ligands_xyz = "/home/magstr/git/tmQMg-L/xyz/ligands_xyzs.xyz"
-
 
 def make_dict_xyz(ligand_xyzs_path: Path):
-    """Create dict of from the single xyz ligand file.The keys in the dict will
-    be the name of the TM for which the ligand xyz is found."""
+    """Create dict of from the single xyz ligand file.
+
+    The keys in the dict will be the name of the TMC for which the
+    ligand xyz is found.
+    """
 
     xyzs = {}
     with open(ligand_xyzs_path, "r") as fh:
@@ -47,7 +40,9 @@ def load_ligand_xyz(ligand_xyzs_path: Path):
 
 def get_smiles_openbabel_hannes(xyz: str):
     """Gets the SMILES string of a given xyz structure using Hannes' Open Babel
-    method that was used to obtain smiles in tmQMg-L.
+    method that was used to obtain smiles in tmQMg-L. NB! This method will give
+    you uncharged SMILES for charged ligands. It also cannot place atomic
+    charged like xyz2mol.
 
     Arguments:
         xyz (str): The xyz structure.
@@ -88,24 +83,18 @@ def get_bidentate(df, df2, charge=0):
 
 
 def get_stable_occ(name: str, df_stable: pd.DataFrame):
-    "Get string of stable occurence label for a ligand"
+    "Get string of most stable occurence label for a ligand"
     stable_oc = df_stable[df_stable["name"] == name]["stable_occurrence_name"].item()
     return stable_oc
 
 
-def get_id(row, df_stable):
-    "Extract the connection id of ligand as list where id can be accessed"
+def get_connection_ids(row, df_stable):
+    "Extract the connection id of ligand as list"
     stable_oc = get_stable_occ(row["name"], df_stable)
     res = row["metal_bond_node_idx_groups"]
     ocs = ast.literal_eval(res)
-    id = ocs[stable_oc]
-    return id
-
-
-def get_connect_id(row, df_stable):
-    "Wrapper func. Not sure this is used"
-    connect_id = get_id(row, df_stable)
-    return int(connect_id)
+    connection_ids = ocs[stable_oc]
+    return connection_ids
 
 
 def _smarts_filter(mol, connect_ids):
@@ -131,7 +120,7 @@ def _smarts_filter(mol, connect_ids):
                 type_matches.append("sylene")
                 continue
 
-        # If not of the matches were found, we set generic label.
+        # If none of the matches were found, we set generic label.
         type_matches.append("generic")
 
     return type_matches
@@ -214,7 +203,11 @@ def attach_dummy_atom_to_coordinating_atoms(row, element="Ir", joint=False):
 
 
 def get_smiles_donor_id(mol):
-    "Get the SMILES and mapped atom numbering for Mol object"
+    """When mol object is written to file the atom ordering can change.
+
+    This function gets the SMILES and maps the ordering of the original
+    mol object atoms to match the new ordering in the SMILES.
+    """
     mol = Chem.RemoveHs(mol)
     smi = Chem.MolToSmiles(mol)
     order = eval(mol.GetProp("_smilesAtomOutputOrder"))
@@ -281,6 +274,8 @@ def single_atom_remover(mol, idx):
 
 
 def process_substitute_attachment_points(mol):
+    "Remove substitute attachment points"
+
     # Determine which attachment. Not working for Ir yet.
     substitute_smarts = Chem.MolFromSmarts("[Be,Li]")
 
