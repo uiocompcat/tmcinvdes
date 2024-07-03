@@ -506,7 +506,7 @@ def screen_generated_ligands(
     # Remove generated enriched SMILES that are verbatim string matches of training set instances:
     unique_generated = [x for x in unique_generated if x not in unique_train]
     validated_generated = validate_enriched_smiles_fun(unique_generated)
-    # No need to validate the train set of Enriched SMILES.
+    # No need to validate the training set of Enriched SMILES.
     if denticity == "monodentate":  # Shared code for monodentates diverges
         processed_generated = process_enriched_smiles_monodentate(
             validated_generated,
@@ -600,7 +600,7 @@ if __name__ == "__main__":
             process_substitutions_fun,
         )
         perfect_match = df_output.equals(df_expect)
-        row_accuracy = compare_dataframes(df_output, df_expect)
+        row_accuracy = compare_dataframes(df_output, df_expect, atom_counting_mode)
         if perfect_match or row_accuracy == 1.0:
             print(
                 f"Test run perfectly reproduced the pre-existing file: {output_file}."
