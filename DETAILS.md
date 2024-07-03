@@ -44,7 +44,7 @@ Any currently outstanding scripts will be added soon.
      - `tmcinvdes/ligand_generation/screen_generated_ligands.py`
      - `bash/screen_generated_ligands-monodentate.sh`
      - `bash/screen_generated_ligands-bidentate.sh`
- - $\mathbf{(4 \rightarrow 5)}$: Select $X$k smallest novel ligands.
+ - $\mathbf{(4 \rightarrow 5)}$: Select $X\mathrm{k}$  smallest novel ligands.
      - `tmcinvdes/ligand_generation/select_Xk_smallest_ligands.py`
      - `bash/select_Xk_smallest_ligands-monodentate.sh`
      - `bash/select_Xk_smallest_ligands-bidentate.sh`

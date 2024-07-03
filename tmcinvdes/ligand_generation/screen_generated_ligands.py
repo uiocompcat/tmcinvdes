@@ -19,7 +19,6 @@ python screen_generated_ligands.py -d bidentate \
 import argparse
 import os
 import re
-import sys
 from pathlib import Path
 from typing import Callable
 
@@ -82,16 +81,13 @@ def parse_args(arg_list: list = None) -> argparse.Namespace:
     parser.add_argument(
         "--xtent",
         "-x",
-        choices=["full", "test", "demo"],
+        choices=["full", "test"],
         default="test",
         help="""The extent to which the process should run.
          - In the "full" case, the process runs in its entirety and writes the output results to
            file.
          - In the "test" case, the process runs in its entirety and compares the results to the
-           output already existing in the designated output file.
-         - In the "demo" case, the process only runs to a limited extent (n ~ 100 instances) and
-           if applicable compares the limited results to the corresponding instances already
-           existing in the designated output file.""",
+           output already existing in the designated output file.""",
     )
     return parser.parse_args(arg_list)
 
@@ -288,14 +284,6 @@ def process_enriched_smiles_monodentate(
             except Exception:
                 if connection_id == 1:
                     canon_connection_ids = [connection_id - 1]
-                else:
-                    print(smile)
-                    print(connection_id)
-                    # Maybe right sided enrichment?
-                    print(
-                        f"Maybe try connection ID as: {len([a for a in mol.GetAtoms()])-1}"
-                    )
-                    sys.exit()
             atom_count = count_atoms_fun(mol)
             processed_dict[canon_smiles] = {
                 "mol": new_mol,
@@ -583,9 +571,7 @@ if __name__ == "__main__":
     df_train = pd.read_csv(train_set_file, header=None)
 
     # Modify process based on xtent:
-    if xtent == "demo":  # Constrain how many instances to process.
-        pass  # Will probably drop this mode, especially for non-order-preserving processes.
-    elif xtent == "test":
+    if xtent == "test":
         df_expect = pd.read_csv(output_file)
         df_expect["Connection IDs"] = [
             eval(x) for x in df_expect["Connection IDs"].values.tolist()
