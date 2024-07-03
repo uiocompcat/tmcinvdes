@@ -19,7 +19,9 @@ Contains the code used to create the JT-VAE training sets.
 
 [Quantum chemistry](/tmcinvdes/quantum_chemistry)
 
-Contains the ORCA input files and parser scripts to label the generated ligands
+Contains the ORCA input files and parser scripts to label the generated ligands.
+
+For nominal runs of the present code, shared both as explicit usage examples and to test reproducibility, see the [detailed workflow](DETAILS.md).
 
 ### Work in Progress
 

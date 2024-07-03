@@ -27,6 +27,7 @@ environment/stda_v1.6.3
 environment/g_spec
 environment/xtb4stda
 environment/xtb
+environment/install_xtb_stda.sh
 **/molsimp_local/
 
 # Configuration Files

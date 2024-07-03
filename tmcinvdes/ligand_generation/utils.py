@@ -15,7 +15,6 @@ def make_dict_xyz(ligand_xyzs_path: Path):
     The keys in the dict will be the name of the TMC for which the
     ligand xyz is found.
     """
-
     xyzs = {}
     with open(ligand_xyzs_path, "r") as fh:
         for xyz in fh.read().split("\n\n"):
@@ -98,7 +97,7 @@ def get_connection_ids(row, df_stable):
 
 
 def _smarts_filter(mol, connect_ids):
-    """Helper function to find various exceptions to the connectiont points.
+    """Helper function to find various exceptions to the connection points.
 
     Currently carbenes and sylenes are detected here. For these we use a
     Be= connection point.
@@ -311,6 +310,105 @@ def process_substitute_attachment_points(mol):
     return new_mol, connect_id
 
 
+def process_substitute_attachment_points_bidentate(mol):
+    # Determine the Ir substitute atom idx
+    substitute_smarts = Chem.MolFromSmarts("[Ir]")
+    matches = mol.GetSubstructMatches(
+        substitute_smarts
+    )  # TL: What is the structure of matches and its elements and subelements?
+
+    # If there are several matches for Ir, then we need to discard the mol
+    connection_ids = None
+    if len(matches) > 1:
+        new_mol = None
+    elif not matches:
+        new_mol = None
+    else:
+        # Get Ir - Atom object
+        # match_atom = mol.GetAtomWithIdx()
+        # Get neighbors to Ir
+        neighbors = mol.GetAtomWithIdx(matches[0][0]).GetNeighbors()
+
+        # For bidentates, there should be exactly 2 neighbors
+        if len(neighbors) != 2:
+            print("There are not two neighbors to the Ir")
+            return None, None
+        try:
+            tmp_mol = single_atom_remover(mol, matches[0][0])
+        except Exception as e:
+            print("Single atom remover failed with error: ")
+            print(e)
+            return None, None
+
+        # Loop through neighbors to create connection_id list
+        connection_ids = []
+        for n in neighbors:
+            id = n.GetIdx()
+            # If Be, we get the id later after Be removal.
+            if n.GetSymbol() == "Be":
+                continue
+
+            # Since we are removing an atom, any atoms with idx higher than the idx of the Ir atom,
+            # will decrease by one.
+            # We therefore need to check for this to set the right connection ID.
+            if id > matches[0][0]:
+                new_id = id - 1
+                connection_ids.append(new_id)
+            else:
+                connection_ids.append(id)
+        # Finally, if one of the neighbors to the Ir is a Be, we need to remove this as well.
+        be_match = tmp_mol.GetSubstructMatches(Chem.MolFromSmarts("[Be]"))
+
+        if be_match:
+            res = Chem.RWMol(tmp_mol)
+            res.BeginBatchEdit()
+
+            for match in be_match:
+                carbene_neighbor = res.GetAtomWithIdx(match[0]).GetNeighbors()[0]
+                carbene_neighbor_idx = carbene_neighbor.GetIdx()
+
+                # We need to explicitely ensure that the carbon atom now is a carbene with 2
+                # radical electrons and 0 hydrogens.
+                carbene_neighbor.SetNumRadicalElectrons(2)
+                carbene_neighbor.SetNoImplicit(True)
+                carbene_neighbor.SetNumExplicitHs(0)
+
+                res.RemoveAtom(match[0])
+
+                # The idx of the new carbene will decrease with number of Be removed, if the
+                # idx of the carbene i larger than the Be idx. This is a bit of a hack.
+                idx_decrease = sum(i[0] < carbene_neighbor_idx for i in be_match)
+                # TL: { hack to fix the hack{
+                if connection_ids and idx_decrease == 0 and len(be_match) == 1:
+                    connection_ids[0] -= 1  # always one?
+                    # print("Decreasing index of non-Be neighbour by 1")
+                # }
+                carbene_neighbor_idx = carbene_neighbor_idx - idx_decrease
+                connection_ids.append(carbene_neighbor_idx)
+            res.CommitBatchEdit()
+            Chem.SanitizeMol(res)
+            tmp_mol = res.GetMol()
+        new_mol = tmp_mol
+    return new_mol, connection_ids
+
+
+def get_neighbors_bidentate(mol: Chem.rdchem.Mol) -> list:
+    connection_ids = (
+        []
+    )  # atom IDs of the connection atoms before removing the enrichment atom(s).
+    substitute_smarts = Chem.MolFromSmarts("[Ir]")
+    matches = mol.GetSubstructMatches(substitute_smarts)
+    if len(matches) == 1:
+        atom = mol.GetAtomWithIdx(matches[0][0])
+        neighbors = atom.GetNeighbors()
+        assert len(neighbors) > 0
+        for neighbor in neighbors:
+            connection_ids.append(neighbor.GetIdx())
+        return connection_ids
+    else:
+        return None
+
+
 def read_file(file_name, num_mols):
     """Read smiles from file and return Mol generator."""
     mols = []
@@ -320,3 +418,59 @@ def read_file(file_name, num_mols):
             if i == num_mols:
                 break
     return mols
+
+
+def compare_dataframes(
+    df_output: pd.DataFrame,
+    df_expect: pd.DataFrame,
+    atom_counting_mode: str = "Heavy atom count",
+) -> float:
+    """Compare the reproduced and expected dataframe and calculate accuracy in
+    terms of identical rows.
+
+    Args:
+        df_output (pd.DataFrame): the reproduced dataframe that would be the output written to file
+        if not testing.
+        df_expect (pd.DataFrame): the target output read back into a dataframe from file.
+        atom_counting_mode (str): the mode of counting atoms per ligand.
+
+    Returns:
+        float: accuracy as a number between 0.0 and 1.0 representing the proportion of overlapping
+        identical rows between the dataframes being compared.
+    """
+    df_output["Connection IDs"] = df_output["Connection IDs"].apply(str)
+    df_expect["Connection IDs"] = df_expect["Connection IDs"].apply(str)
+    df_output["Coordination environment"] = df_output["Coordination environment"].apply(
+        str
+    )
+    df_expect["Coordination environment"] = df_expect["Coordination environment"].apply(
+        str
+    )
+    rows_intersect = pd.merge(
+        df_output,
+        df_expect,
+        how="inner",
+        on=[
+            atom_counting_mode,
+            "Canonical SMILES",
+            "Connection IDs",
+            "Enriched SMILES",
+            "Coordination environment",
+        ],
+    )
+    rows_union = pd.merge(
+        df_output,
+        df_expect,
+        how="outer",
+        on=[
+            atom_counting_mode,
+            "Canonical SMILES",
+            "Connection IDs",
+            "Enriched SMILES",
+            "Coordination environment",
+        ],
+    )
+    if rows_intersect.equals(rows_union):
+        return 1.0
+    row_accuracy = float(rows_intersect.shape[0]) / rows_union.shape[0]
+    return row_accuracy
