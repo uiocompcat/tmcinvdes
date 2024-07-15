@@ -20,7 +20,6 @@ import argparse
 import os
 import re
 from pathlib import Path
-from typing import Callable
 
 import pandas as pd
 from rdkit import Chem
@@ -235,8 +234,6 @@ def get_coordination_env(mol: Chem.rdchem.Mol, connection_ids: list) -> list:
 def process_enriched_smiles_monodentate(
     enriched_smilesx: list,
     atom_counting_mode: str,
-    count_atoms_fun: Callable,
-    process_substitutions_fun: Callable,
 ) -> dict:
     """Process enriched SMILES strings into Mol objects and canonical SMILES,
     or else discard them. Monodentate version.
@@ -245,8 +242,6 @@ def process_enriched_smiles_monodentate(
         enriched_smilesx (list): list of the validated subset of enriched SMILES, Mol objects and
         connection atoms.
         atom_counting_mode (str): the mode of counting atoms per ligand.
-        count_atoms_fun (Callable): the function used to count atoms.
-        process_substitutions_fun (Callable): the function used to process the substitutions from
         the enriched SMILES encoding.
 
     Returns:
@@ -273,7 +268,7 @@ def process_enriched_smiles_monodentate(
         envs = get_coordination_env(mol, [connection_id])
 
         try:
-            new_mol, new_connection_ids = process_substitutions_fun(mol)
+            new_mol, new_connection_ids = process_substitute_attachment_points(mol)
             if isinstance(
                 new_connection_ids, int
             ):  # Always for monodentates, left for later refactor
@@ -284,7 +279,7 @@ def process_enriched_smiles_monodentate(
             except Exception:
                 if connection_id == 1:
                     canon_connection_ids = [connection_id - 1]
-            atom_count = count_atoms_fun(mol)
+            atom_count = count_atoms_hless(mol)
             processed_dict[canon_smiles] = {
                 "mol": new_mol,
                 "Enriched SMILES": smile,
@@ -300,8 +295,6 @@ def process_enriched_smiles_monodentate(
 def process_enriched_smiles_bidentate(
     enriched_smilesx: list,
     atom_counting_mode: str,
-    count_atoms_fun: Callable,
-    process_substitutions_fun: Callable,
 ) -> dict:
     """Process enriched SMILES strings into Mol objects and canonical SMILES,
     or else discard them.
@@ -309,8 +302,6 @@ def process_enriched_smiles_bidentate(
     Args:
         enriched_smilesx (list): list of enriched SMILES strings.
         atom_counting_mode (str): the mode of counting atoms per ligand.
-        count_atoms_fun (Callable): the function used to count atoms.
-        process_substitutions_fun (Callable): the function used to process the substitutions from
         the enriched SMILES encoding.
 
     Returns:
@@ -327,7 +318,7 @@ def process_enriched_smiles_bidentate(
             envs = get_coordination_env(mol, connection_ids)
             envs = sorted(envs)
         try:
-            mol, connection_ids = process_substitutions_fun(mol)
+            mol, connection_ids = process_substitute_attachment_points_bidentate(mol)
             if isinstance(connection_ids, int):
                 connection_ids = [connection_ids]
             canon_smiles, hless_mapped_ids = get_smiles_donor_id(mol)
@@ -335,7 +326,7 @@ def process_enriched_smiles_bidentate(
                 canon_connection_ids = [hless_mapped_ids[x] for x in connection_ids]
             except Exception:
                 continue
-            atom_count = count_atoms_fun(mol)
+            atom_count = count_atoms_hfull(mol)
             # Mark for deletion ligands where the connection IDs are not unambiguous:
             if canon_smiles in processed_dict:
                 if (
@@ -464,9 +455,6 @@ def screen_generated_ligands(
     df_train: pd.DataFrame,
     denticity: str,
     atom_counting_mode: str,
-    validate_enriched_smiles_fun: Callable,
-    count_atoms_fun: Callable,
-    process_substitutions_fun: Callable,
 ) -> pd.DataFrame:
     """Screen generated ligands for validity and novelty relative to the
     training set.
@@ -493,25 +481,22 @@ def screen_generated_ligands(
     unique_train = get_unique_in_order(df_train[0].values.tolist())
     # Remove generated enriched SMILES that are verbatim string matches of training set instances:
     unique_generated = [x for x in unique_generated if x not in unique_train]
-    validated_generated = validate_enriched_smiles_fun(unique_generated)
     # No need to validate the training set of Enriched SMILES.
     if denticity == "monodentate":  # Shared code for monodentates diverges
+        validated_generated = validate_enriched_smiles_monodentate(unique_generated)
         processed_generated = process_enriched_smiles_monodentate(
             validated_generated,
             atom_counting_mode,
-            count_atoms_fun,
-            process_substitutions_fun,
         )
     elif denticity == "bidentate":
+        validated_generated = validate_enriched_smiles_bidentate(unique_generated)
         processed_generated = process_enriched_smiles_bidentate(
             validated_generated,
             atom_counting_mode,
-            count_atoms_fun,
-            process_substitutions_fun,
         )
         processed_generated = remove_ambiguously_connected_ligands(processed_generated)
         processed_train = process_enriched_smiles_bidentate(
-            unique_train, atom_counting_mode, count_atoms_fun, process_substitutions_fun
+            unique_train, atom_counting_mode
         )
         # No need to remove ambiguously connected ligands in the training set.
         # Remove generated enriched SMILES that are structural matches of training set instances:
@@ -554,17 +539,11 @@ if __name__ == "__main__":
         output_file = os.path.join(output_dir, "uncond_mono-raw50k-novel.csv")
         train_set_file = os.path.join(train_set_dir, "tmQMg-L_mono.txt")
         atom_counting_mode = "Heavy atom count"
-        validate_enriched_smiles_fun = validate_enriched_smiles_monodentate
-        count_atoms_fun = count_atoms_hless
-        process_substitutions_fun = process_substitute_attachment_points
     elif denticity == "bidentate":
         input_file = os.path.join(input_dir, "uncond_bi-raw50k.txt")
         output_file = os.path.join(output_dir, "uncond_bi-raw50k-novel.csv")
         train_set_file = os.path.join(train_set_dir, "tmQMg-L_bi.txt")
         atom_counting_mode = "Atom count"
-        validate_enriched_smiles_fun = validate_enriched_smiles_bidentate
-        count_atoms_fun = count_atoms_hfull
-        process_substitutions_fun = process_substitute_attachment_points_bidentate
 
     # These files should have no column header, each is just a single column of enriched SMILES.
     df_input = pd.read_csv(input_file, header=None)
@@ -581,9 +560,6 @@ if __name__ == "__main__":
             df_train,
             denticity,
             atom_counting_mode,
-            validate_enriched_smiles_fun,
-            count_atoms_fun,
-            process_substitutions_fun,
         )
         perfect_match = df_output.equals(df_expect)
         row_accuracy = compare_dataframes(df_output, df_expect, atom_counting_mode)
@@ -604,8 +580,5 @@ if __name__ == "__main__":
             df_train,
             denticity,
             atom_counting_mode,
-            validate_enriched_smiles_fun,
-            count_atoms_fun,
-            process_substitutions_fun,
         )
         df_output.to_csv(output_file, index=False, header=True)
