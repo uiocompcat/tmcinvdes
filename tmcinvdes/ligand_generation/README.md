@@ -1,4 +1,4 @@
-# Ligand Generation
+# Get ligand training sets
 
 This folder contains code for selecting the training data for the unconditional JT-VAE models.
 
@@ -7,6 +7,8 @@ To generate the training sets run the following script. The [tmQMg-L](https://gi
 ```
 python get_encoded_smiles.py -i ~/git/tmQMg-L -o output_dir -d monodentate
 ```
+
+To generate ligands with the training sets see the [FastJTNNpy3](https://github.com/Strandgaard96/FastJTNNpy3) repo.
 
 ## RDKIT version
 
