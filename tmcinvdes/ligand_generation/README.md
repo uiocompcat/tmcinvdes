@@ -10,4 +10,4 @@ python get_encoded_smiles.py -i ~/git/tmQMg-L -o output_dir -d monodentate
 
 ## RDKIT version
 
-Be aware that minor differences in RDKit version will lead to different outputs of `get_substituted_smiles.py`.
+Be aware that minor differences in RDKit version will lead to different outputs of `get_encoded_smiles`.
