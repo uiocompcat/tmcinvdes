@@ -34,3 +34,6 @@ environment/install_xtb_stda.sh
 .ruff_cache/
 .conda/
 .vs_code/
+run.out
+nul
+ligands_dict_xyz.json
