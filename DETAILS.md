@@ -2,7 +2,7 @@
 
 ## Overview
 
-Every data workflow stage under [datasets/DETAILS.md](datasets/DETAILS.md) that relies on the code in the present repository can be reproduced by one Python script (`tmcinvdes/.../{process_verb}.py`) being called by two Bash scripts (`bash/{process_verb}-{denticity}-{specifications}.sh`). *(The `-{specifications}` can be used to disinguish Bash files where the Python script is used to produce more than one stage, i.e., for assembling TMC structures, and for parsing ORCA output files to label TMCs/ligands after ORCA calculations.)*
+Every data workflow stage under [datasets/DETAILS.md](datasets/DETAILS.md) that relies on the code in the present repository can be reproduced by one Python script (`tmcinvdes/.../{process_verb}.py`) being called by two Bash scripts (`bash/{process_verb}-{denticity}-{specifications}.sh`). Reproduction is not always perfect, and further details on this aspect are available [here](REPRODUCIBILITY.md). *(The `-{specifications}` can be used to disinguish Bash files where the Python script is used to produce more than one stage, i.e., for assembling TMC structures, and for parsing ORCA output files to label TMCs/ligands after ORCA calculations.)*
 
 In other words, the Python script structures the general process for both the monodentate and bidentate cases, whereas the Bash scripts represent the nominal run of that process for the monodentate or bidentate case.
 
@@ -12,7 +12,7 @@ We use the flag `--xtent` or `-x` to differentiate the extent to which the Pytho
  - In the `full` case, the process runs in its entirety and writes the output results to file.
  - In the `test` case, the process runs in its entirety and compares the results to the output already existing in the designated output file.
 
-When 100% perfect reproduction is not possible, the script prints to screen a numerical accuracy of the reproduction with respect to the recorded result.
+Because the computational cost is extensive for a full run of the process of assembling TMCs, the $\mathbf{(5 \rightarrow 6)}$ process step applies a `demo` value for the argument `--xtent`, merely demonstrating the TMC assembly process step with a small selection of ligands for the monodentate or bidentate case.
 
 ## The Bash Files
 
@@ -38,7 +38,7 @@ Any currently outstanding scripts will be added soon.
      - `tmcinvdes/ligand_generation/get_encoded_smiles.py`
      - `bash/get_encoded_smiles-monodentate.sh`
      - `bash/get_encoded_smiles-bidentate.sh`
- - $\mathbf{(1 \rightarrow 2)}$: Train unconditional JT-VAE models. This is done with code in the separate repository [https://github.com/Strandgaard96/FastJTNNpy3/](https://github.com/Strandgaard96/FastJTNNpy3/) applied to the `.txt` files in $1$.
+ - $\mathbf{(1 \rightarrow 2)}$: Train unconditional JT-VAE models. This is done with code in the separate JT-VAE repository [https://github.com/Strandgaard96/FastJTNNpy3/](https://github.com/Strandgaard96/FastJTNNpy3/) applied to the `.txt` files in $1$.
  - $\mathbf{(2 \rightarrow 3)}$: Unconditionally generate ligands with trained unconditional JT-VAE models. See our [JT-VAE](https://github.com/Strandgaard96/FastJTNNpy3/) repository.
  - $\mathbf{(3 \rightarrow 4)}$: Process and screen unconditionally generated ligands to extract only novel ligands.
      - `tmcinvdes/ligand_generation/screen_generated_ligands.py`
@@ -64,13 +64,10 @@ Any currently outstanding scripts will be added soon.
  - $\mathbf{(8b \rightarrow 10)}$: Sample ligands for optimization.
      - `tmcinvdes/ligand_generation/sample_ligands_to_optimize.py`
      - `bash/sample_ligands_to_optimize-monodentate.sh`
-     - `bash/sample_ligands_to_optimize-bidentate.sh`
  - $\mathbf{(10 \rightarrow 11)}$: Optimize sampled ligands. See our [JT-VAE](https://github.com/Strandgaard96/FastJTNNpy3/) repository.
- - $\mathbf{(11 \rightarrow 12)}$: *(Repeat)* Assemble TMC structures as XYZ blocks in concatenated output file. (New Bash files but re-used Python script.)
-     - `tmcinvdes/structure_generation/assemble_tmcs.py`
+ - $\mathbf{(11 \rightarrow 12)}$: Assemble TMC structures as XYZ blocks in concatenated output file. (New Bash files but re-used Python script.)
+     - `tmcinvdes/structure_generation/assemble_tmcs.py` *(Re-used from $\mathbf{(5 \rightarrow 6)}$.)*
      - `bash/assemble_tmcs-monodentate-cond_mono-sampled_optimized.sh`
-     - `bash/assemble_tmcs-bidentate-cond_bi_cis-sampled_optimized.sh`
- - $\mathbf{(12 \rightarrow 13)}$: *(Repeat)* Label TMCs by ORCA calculations on TMCs. The ORCA calculations are done on HPC, the present Python file only parses the ORCA output files. (New Bash files but re-used Python script.)
-     - `tmcinvdes/quantum_chemistry/orca/parse_orca_to_labels.py`
+ - $\mathbf{(12 \rightarrow 13)}$: Label TMCs by ORCA calculations on TMCs. The ORCA calculations are done on HPC, the present Python file only parses the ORCA output files. (New Bash files but re-used Python script.)
+     - `tmcinvdes/quantum_chemistry/orca/parse_orca_to_labels.py` *(Re-used from $\mathbf{(6 \rightarrow 7)}$.)*
      - `bash/parse_orca_to_labels-monodentate-cond_mono-sampled_optimized.sh`
-     - `bash/parse_orca_to_labels-bidentate-cond_bi_cis-sampled_optimized.sh`

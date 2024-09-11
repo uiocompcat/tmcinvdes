@@ -1,8 +1,9 @@
 # Datasets and Files
 
-This folder contains the training sets for the unconditional monodentate and bidentate models and the corresponding trained models.
+This directory contains the datafiles for the workflow reported in our preprint. The datafiles include training sets for the unconditional monodentate and bidentate models and the corresponding trained models.
 
-The fork used to train the models can be found at: [FastJTNNpy3](https://github.com/Strandgaard96/FastJTNNpy3)
-The fork also contains code to do directional optimization in latent space.
+The code used to train the models can be found at: [FastJTNNpy3](https://github.com/Strandgaard96/FastJTNNpy3).
 
-For detailed descriptions of folder contents see [DETAILS.md](DETAILS.md)
+The fork also contains code to do unconditional generation and directional optimization in latent space, i.e., conditional generation.
+
+For detailed descriptions of datafiles in the subdirectories [here](datasets/), see [DETAILS.md](DETAILS.md).
