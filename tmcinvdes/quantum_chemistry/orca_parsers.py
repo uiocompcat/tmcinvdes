@@ -10,7 +10,7 @@ from pathlib import Path
 from pprint import pprint
 from typing import List
 
-from cm5 import get_cm5
+from tmcinvdes.quantum_chemistry.cm5 import get_cm5
 
 
 def get_args(arg_list=None):
