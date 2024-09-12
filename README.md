@@ -6,7 +6,7 @@ Public repository for the preprint ["Deep Generative Model for the Dual-Objectiv
 
 <img align="center" src="concept_overview.png" alt="Inverse Design of Metal Complexes" width="800"/>
 
-The fork used to train the JT-VAE models can be found at: [FastJTNNpy3](https://github.com/Strandgaard96/FastJTNNpy3). All the scripts used to train the models, generate ligands, and perform conditional optimization can be found in that fork.
+The code used to train the JT-VAE models and generate ligands can be found at: [FastJTNNpy3](https://github.com/Strandgaard96/FastJTNNpy3).
 
 ## Code
 
@@ -17,9 +17,18 @@ The code also relies on a local download of the [tmQMg-L](https://github.com/hkn
 
 Contains the code used to create the JT-VAE training sets.
 
+[Structure generation](/tmcinvdes/structure_generation)
+
+Contains the code to assemble TMCs from ligands.
+
 [Quantum chemistry](/tmcinvdes/quantum_chemistry)
 
-Contains the ORCA input files and parser scripts to label the generated ligands.
+Contains the ORCA input file and parser scripts to label the generated ligands with the DFT-calculated properties of their homoleptic TMCs.
+
+[Analysis](/tmcinvdes/analysis)
+
+Contains the code for analyzing and processing data.
+
 
 For nominal runs of the present code, shared both as explicit usage examples and to test reproducibility, see the [detailed workflow](DETAILS.md).
 
