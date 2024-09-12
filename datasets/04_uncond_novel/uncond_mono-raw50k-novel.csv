@@ -1,4 +1,4 @@
-Heavy atom count,Canonical SMILES,Connection IDs,Enriched SMILES,Coordination environment
+Heavy atom count,Decoded SMILES,Connection IDs,Encoded SMILES,Coordination environment
 4,CC#N,[2],[Li]<-N#CC,['N([C])']
 4,O=CP,[0],[Li]<-O=CP,['O([C])']
 4,N[C]I,[1],[Be]=C(N)I,['C_carb([N])([I])']
