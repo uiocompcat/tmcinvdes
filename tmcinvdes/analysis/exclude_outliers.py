@@ -1,16 +1,14 @@
-"""Apply IsolationForest to separate labeled TMC data into outliers to be
-excluded and the remaining data points to be included in subsequent training of
-conditional generative models.
+"""Apply IsolationForest in order to separate labeled TMC data into outliers to
+be excluded and the remaining data points to be included in subsequent training
+of conditional generative models.
 
-Usage:
+Usage: (from root directory of this repository)
 
-python exclude_outliers.py -d denticity -i input_dir -o output_dir -r remainder_dir -x test
-
-python exclude_outliers.py -d bidentate \
-                           -i datasets/07_uncond-labeled  \
-                           -o datasets/08a_uncond-excluded \
-                           -r datasets/08b_uncond-included \
-                           -x test
+python -m tmcinvdes.analysis.exclude_outliers -d bidentate \
+                                              -i datasets/07_uncond-labeled \
+                                              -o datasets/08a_uncond-excluded \
+                                              -r datasets/08b_uncond-included \
+                                              -x test
 """
 
 import argparse
@@ -22,6 +20,8 @@ import numpy as np
 import pandas as pd
 from scipy import constants
 from sklearn.ensemble import IsolationForest
+
+from tmcinvdes.utils import compare_dataframes
 
 eV_per_Eh = 1 / constants.physical_constants["electron volt-hartree relationship"][0]
 Eh_per_eV = constants.physical_constants["electron volt-hartree relationship"][0]
@@ -81,45 +81,6 @@ def parse_args(arg_list: list = None) -> argparse.Namespace:
            output already existing in the designated output file.""",
     )
     return parser.parse_args(arg_list)
-
-
-def compare_dataframes(
-    df_output: pd.DataFrame, df_expect: pd.DataFrame, columns: list[str]
-) -> float:
-    """Compare the reproduced and expected dataframe and calculate accuracy in
-    terms of identical rows.
-
-    This variant of the function is generalized work in exclude_outliers.py, unlike the similar
-    function under `ligand_generation.utils`.
-
-    The present, more general approach may supersede the previous one, eventually.
-
-    Args:
-        df_output (pd.DataFrame): the reproduced dataframe that would be the output written to file
-        if not testing.
-        df_expect (pd.DataFrame): the target output read back into a dataframe from file.
-        columns (list[str]): the shared dataframe columns to use for inner and outer joins.
-
-    Returns:
-        float: accuracy as a number between 0.0 and 1.0 representing the proportion of overlapping
-        identical rows between the dataframes being compared.
-    """
-    rows_intersect = pd.merge(
-        df_output,
-        df_expect,
-        how="inner",
-        on=columns,
-    )
-    rows_union = pd.merge(
-        df_output,
-        df_expect,
-        how="outer",
-        on=columns,
-    )
-    if rows_intersect.equals(rows_union):
-        return 1.0
-    row_accuracy = float(rows_intersect.shape[0]) / rows_union.shape[0]
-    return row_accuracy
 
 
 def remove_outliers(df: pd.DataFrame, contamination: float) -> Tuple[pd.DataFrame]:
