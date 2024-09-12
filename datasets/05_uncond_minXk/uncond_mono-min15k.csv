@@ -1,4 +1,4 @@
-Ligand ID,Heavy atom count,Canonical SMILES,Connection IDs,Enriched SMILES,Coordination environment
+Ligand ID,Heavy atom count,Decoded SMILES,Connection IDs,Encoded SMILES,Coordination environment
 uncond_mono-min15k-1,4,CC#N,[2],[Li]<-N#CC,['N([C])']
 uncond_mono-min15k-2,4,O=CP,[0],[Li]<-O=CP,['O([C])']
 uncond_mono-min15k-3,4,N[C]I,[1],[Be]=C(N)I,['C_carb([N])([I])']
