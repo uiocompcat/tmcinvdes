@@ -2,7 +2,7 @@
 
 ## Overview
 
-Every data workflow stage under [datasets/DETAILS.md](datasets/DETAILS.md) that relies on the code in the present repository can be reproduced by one Python script (`tmcinvdes/.../{process_verb}.py`) being called by two Bash scripts (`bash/{process_verb}-{denticity}-{specifications}.sh`). Reproduction is not always perfect, and further details on this aspect are available [here](REPRODUCIBILITY.md). *(The `-{specifications}` can be used to disinguish Bash files where the Python script is used to produce more than one stage, i.e., for assembling TMC structures, and for parsing ORCA output files to label TMCs/ligands after ORCA calculations.)*
+Every data workflow stage under [datasets/DETAILS.md](datasets/DETAILS.md) that relies on the code in the present repository can be reproduced by one Python script (`tmcinvdes/.../{process_verb}.py`) being called by two Bash scripts (`bash/{process_verb}-{denticity}-{specifications}.sh`). Reproduction is not always perfect, and further details on this aspect are available [here](REPRODUCIBILITY.md). *(The `-{specifications}` can be used to distinguish Bash files where the Python script is used to produce more than one stage, i.e., for assembling TMC structures, and for parsing ORCA output files to label TMCs/ligands after ORCA calculations.)*
 
 In other words, the Python script structures the general process for both the monodentate and bidentate cases, whereas the Bash scripts represent the nominal run of that process for the monodentate or bidentate case.
 

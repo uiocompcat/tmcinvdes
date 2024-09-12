@@ -23,7 +23,7 @@ from tmcinvdes.structure_generation.batch_add_ligands import (
     batch_add_ligands,
     batch_add_monodentate_optimized_ligands,
 )
-from tmcinvdes.structure_generation.molsimplify_tools import mybash
+from tmcinvdes.structure_generation.molsimplify_tools import run_bash
 
 
 def parse_args(arg_list: list = None) -> argparse.Namespace:
@@ -118,7 +118,7 @@ def build_tmc(geometry: str, metal_center: str, ligand_names: list) -> tuple:
         "-keepHs yes",
     ]
 
-    output = mybash(" ".join(["molsimplify", *parameters]))
+    output = run_bash(" ".join(["molsimplify", *parameters]))
 
     # Save the molSimplify structure.
     if output.find("WARNING: Generated complex is not good!") > -1:
