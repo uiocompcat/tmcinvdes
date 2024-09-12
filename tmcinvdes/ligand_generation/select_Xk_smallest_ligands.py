@@ -1,14 +1,12 @@
 """Select a subset of smaller ligands and give them IDs as part of a new set of
 ligands.
 
-Usage:
+Usage: (from root directory of repository)
 
-python select_Xk_smallest_ligands.py -d denticity -i input_dir -o output_dir -x test
-
-python select_Xk_smallest_ligands.py -d bidentate \
-                                     -i ../../datasets/04_uncond_novel \
-                                     -o ../../datasets/05_uncond_minXk \
-                                     -x test
+python -m tmcinvdes.ligand_generation.select_Xk_smallest_ligands -d monodentate \
+                                                                 -i datasets/04_uncond_novel \
+                                                                 -o datasets/05_uncond_minXk \
+                                                                 -x test
 """
 
 import argparse
