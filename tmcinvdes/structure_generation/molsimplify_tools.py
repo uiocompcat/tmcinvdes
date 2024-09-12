@@ -9,7 +9,7 @@ import subprocess
 import uxtbpy
 
 
-def mybash(cmd):
+def run_bash(cmd):
     """Function to run a bash command, waiting 8 min to complete."""
     cmd = shlex.split(cmd)
     try:
@@ -69,7 +69,7 @@ def add_ligand_from_xyz(xyz: str, name: str, connection_ids: list):
     # subprocess.run(
     #     ["molsimplify", *parameters], stdout=subprocess.PIPE, stderr=subprocess.PIPE
     # )
-    mybash(" ".join(["molsimplify", *parameters]))
+    run_bash(" ".join(["molsimplify", *parameters]))
 
     # clean up temporary file
     os.remove("temp_mol.xyz")
@@ -102,7 +102,7 @@ def add_ligand_from_smiles(
         "-skipANN True",
     ]
 
-    mybash(" ".join(["molsimplify", *parameters]))
+    run_bash(" ".join(["molsimplify", *parameters]))
 
 
 def build_tmc(geometry: str, metal_center: str, ligand_names: list):
@@ -128,7 +128,7 @@ def build_tmc(geometry: str, metal_center: str, ligand_names: list):
         "-name run",
         "-keepHs yes",
     ]
-    mybash(" ".join(["molsimplify", *parameters]))
+    run_bash(" ".join(["molsimplify", *parameters]))
 
     with open("Runs/run/run/run.xyz") as fh:
         xyz = fh.read()

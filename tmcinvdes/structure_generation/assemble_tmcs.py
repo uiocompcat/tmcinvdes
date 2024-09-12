@@ -23,7 +23,7 @@ from tmcinvdes.structure_generation.batch_add_ligands import (
     batch_add_ligands,
     batch_add_monodentate_optimized_ligands,
 )
-from tmcinvdes.structure_generation.molsimplify_tools import mybash
+from tmcinvdes.structure_generation.molsimplify_tools import run_bash
 
 
 def parse_args(arg_list: list = None) -> argparse.Namespace:
@@ -118,7 +118,7 @@ def build_tmc(geometry: str, metal_center: str, ligand_names: list) -> tuple:
         "-keepHs yes",
     ]
 
-    output = mybash(" ".join(["molsimplify", *parameters]))
+    output = run_bash(" ".join(["molsimplify", *parameters]))
 
     # Save the molSimplify structure.
     if output.find("WARNING: Generated complex is not good!") > -1:
@@ -286,11 +286,11 @@ if __name__ == "__main__":
         if xtent == "demo":  # Constrain how many instances to process.
             if args.optimized:
                 demo_ligand_ids = [
-                    "cond_mono-O6_optimized-uncond_mono-min15k-352",
-                    "cond_mono-O4_optimized-uncond_mono-min15k-1464",
-                    "cond_mono-O5_optimized-uncond_mono-min15k-4135",
-                    "cond_mono-O4_optimized-uncond_mono-min15k-4357",
-                    "cond_mono-O3_optimized-uncond_mono-min15k-4842",
+                    "cond_mono-O5_optimized-uncond_mono-min15k-6",
+                    "cond_mono-O7_optimized-uncond_mono-min15k-6",
+                    "cond_mono-O8_optimized-uncond_mono-min15k-6",
+                    "cond_mono-O6_optimized-uncond_mono-min15k-6",
+                    "cond_mono-O1_optimized-uncond_mono-min15k-6",
                 ]
             else:
                 demo_ligand_ids = [
