@@ -1,11 +1,13 @@
+"""Provide utility functions related to handling ligand data."""
+
 import ast
 import json
 import os
+from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from openbabel import openbabel
 from rdkit import Chem
 
 
@@ -37,32 +39,6 @@ def load_ligand_xyz(ligand_xyzs_path: Path):
     return xyzs
 
 
-def get_smiles_openbabel_hannes(xyz: str):
-    """Gets the SMILES string of a given xyz structure using Hannes' Open Babel
-    method that was used to obtain smiles in tmQMg-L. NB! This method will give
-    you uncharged SMILES for charged ligands. It also cannot place atomic
-    charged like xyz2mol.
-
-    Arguments:
-        xyz (str): The xyz structure.
-
-    Returns:
-        str: The SMILES string.
-    """
-    # setup converter for reading xyz
-    obConversion = openbabel.OBConversion()
-    obConversion.SetInAndOutFormats("xyz", "mdl")
-
-    # setup molecule
-    mol = openbabel.OBMol()
-    obConversion.ReadString(mol, xyz)
-
-    # set converter for getting smiles
-    obConversion.SetInAndOutFormats("mdl", "smi")
-
-    return obConversion.WriteString(mol).strip()
-
-
 def get_monodentate(df, df2, charge=0):
     "Get df of neutral monodentates"
 
@@ -74,7 +50,6 @@ def get_monodentate(df, df2, charge=0):
 def get_bidentate(df, df2, charge=0):
     "Get dataframe of neutral monodentates and bidentates."
     df2["charge"] = df["charge"]
-    # mono_mask = (df["n_metal_bound"] == 1) & (df["n_dentic_bound"] == 1)
     bi_mask = (df["n_metal_bound"] == 2) & (df["n_dentic_bound"] == 2)
     charge_mask = df2["charge"] == charge
     monodentate = df2[(bi_mask) & charge_mask]
@@ -96,7 +71,7 @@ def get_connection_ids(row, df_stable):
     return connection_ids
 
 
-def _smarts_filter(mol, connect_ids):
+def _smarts_filter(mol: Chem.rdchem.Mol, connect_ids: list[int]):
     """Helper function to find various exceptions to the connection points.
 
     Currently carbenes and sylenes are detected here. For these we use a
@@ -131,13 +106,13 @@ def attach_dummy_atom_to_coordinating_atoms(row, element="Ir", joint=False):
     mol = row["custom_mol"]
     connect_id = row["connect_id"]
 
-    # Extract the binding ids
+    # Extract the connection IDs.
     if len(connect_id) > 1:
         ids = [int(x[0]) for x in connect_id]
     else:
         ids = [int(connect_id[0][0])]
 
-    # To ensure radicals are present in the mol object, we need to sanitize
+    # To ensure radicals are present in the Mol object, we need to sanitize.
     try:
         Chem.SanitizeMol(mol)
     except Exception as e:
@@ -145,7 +120,7 @@ def attach_dummy_atom_to_coordinating_atoms(row, element="Ir", joint=False):
         print(e)
         return None
 
-    # Start editing mol
+    # Start editing Mol.
     emol = Chem.RWMol(mol)
     emol.BeginBatchEdit()
 
@@ -178,7 +153,7 @@ def attach_dummy_atom_to_coordinating_atoms(row, element="Ir", joint=False):
             alternate_idxs.append(idx)
             emol.AddBond(int(connect_id), idx, mapper[type_match]["bond_type"])
 
-    # Decide wether to connect everything on the same Irridium
+    # Decide whether to connect everything on the same Iridium.
     if joint:
         if alternate_idxs and len(type_matches) > 1:
             if idx_generic:
@@ -195,17 +170,16 @@ def attach_dummy_atom_to_coordinating_atoms(row, element="Ir", joint=False):
     mol = emol.GetMol()
     try:
         Chem.SanitizeMol(mol)
-        # print(Chem.MolToSmiles(mol))
         return mol
     except Exception:
         return None
 
 
-def get_smiles_donor_id(mol):
-    """When mol object is written to file the atom ordering can change.
+def get_smiles_donor_id(mol: Chem.rdchem.Mol):
+    """When the Mol object is written to file, the atom ordering can change.
 
     This function gets the SMILES and maps the ordering of the original
-    mol object atoms to match the new ordering in the SMILES.
+    Mol object atoms to match the new ordering in the SMILES.
     """
     mol = Chem.RemoveHs(mol)
     smi = Chem.MolToSmiles(mol)
@@ -217,7 +191,7 @@ def get_smiles_donor_id(mol):
     return smi, mapped_ids
 
 
-def prune_num_atoms(mol, num=None):
+def prune_num_atoms(mol: Chem.rdchem.Mol, num: int = None):
     if isinstance(mol, str):
         try:
             mol = Chem.MolFromSmiles(mol)
@@ -234,7 +208,7 @@ def prune_num_atoms(mol, num=None):
         print(e)
         return None
 
-    # Remove the weird SIs
+    # Remove the weird SIs.
     smart = Chem.MolFromSmarts("[Li]<-[Si]")
     if mol.GetSubstructMatch(smart):
         return None
@@ -254,15 +228,15 @@ def prune_num_atoms(mol, num=None):
         return None
 
 
-def single_atom_remover(mol, idx):
+def single_atom_remover(mol: Chem.rdchem.Mol, idx: int) -> Chem.rdchem.Mol:
     """Function that removes an atom at specified idx.
 
     Args:
-        mol (Chem.rdchem.Mol): The Mol to remove substruct on
-        idx (int): idx of atom to remove from the input Mol
+        mol (Chem.rdchem.Mol): The Mol from which to remove atom.
+        idx (int): ID of atom to remove from the input Mol.
 
     Returns:
-        Chem.rdchem.Mol: The ouput Mol with the atom removed
+        The Mol with the atom removed.
     """
     res = Chem.RWMol(mol)
     res.BeginBatchEdit()
@@ -272,10 +246,17 @@ def single_atom_remover(mol, idx):
     return res.GetMol()
 
 
-def process_substitute_attachment_points(mol):
-    "Remove substitute attachment points"
+def process_substitute_attachment_points(mol: Chem.rdchem.Mol) -> tuple:
+    """Remove substitute attachment points. This decodes a monodentate ligand,
+    so that the Mol can output a decoded SMILES.
 
-    # Determine which attachment. Not working for Ir yet.
+    Args:
+        mol (Chem.rdchem.Mol): the encoded Mol of a monodentate ligand.
+
+    Returns:
+        Decoded Mol object and its connection ID.
+    """
+    # Determine which attachment.
     substitute_smarts = Chem.MolFromSmarts("[Be,Li]")
 
     matches = mol.GetSubstructMatches(substitute_smarts)
@@ -288,7 +269,7 @@ def process_substitute_attachment_points(mol):
     else:
         match_atom = mol.GetAtomWithIdx(matches[0][0])
 
-        # We remove the substitute here. Since Li or Be is always 0, the coordinating atom
+        # We remove the substitute here. Since Li or Be is always at 0, the coordinating atom
         # will get id 0 after removal.
         try:
             new_mol = single_atom_remover(mol, matches[0][0])
@@ -303,33 +284,38 @@ def process_substitute_attachment_points(mol):
             # 2 radical atoms to create the carbene.
             new_mol.GetAtomWithIdx(0).SetNumRadicalElectrons(2)
 
-            # Ensure that there are no hydrogens on the Carbon atom
+            # Ensure that there are no hydrogens on the Carbon atom.
             new_mol.GetAtomWithIdx(0).SetNoImplicit(True)
             new_mol.GetAtomWithIdx(0).SetNumExplicitHs(0)
 
     return new_mol, connect_id
 
 
-def process_substitute_attachment_points_bidentate(mol):
-    # Determine the Ir substitute atom idx
-    substitute_smarts = Chem.MolFromSmarts("[Ir]")
-    matches = mol.GetSubstructMatches(
-        substitute_smarts
-    )  # TL: What is the structure of matches and its elements and subelements?
+def process_substitute_attachment_points_bidentate(mol: Chem.rdchem.Mol) -> tuple:
+    """Remove substitute attachment points. This decodes a bidentate ligand, so
+    that the Mol can output a decoded SMILES.
 
-    # If there are several matches for Ir, then we need to discard the mol
+    Args:
+        mol (Chem.rdchem.Mol): the encoded Mol of a bidentate ligand.
+
+    Returns:
+        Decoded Mol object and its connection IDs.
+    """
+    # Determine the Ir substitute atom idx.
+    substitute_smarts = Chem.MolFromSmarts("[Ir]")
+    matches = mol.GetSubstructMatches(substitute_smarts)
+
+    # If there are several matches for Ir, then we need to discard the mol.
     connection_ids = None
     if len(matches) > 1:
         new_mol = None
     elif not matches:
         new_mol = None
     else:
-        # Get Ir - Atom object
-        # match_atom = mol.GetAtomWithIdx()
-        # Get neighbors to Ir
+        # Get the neighbors of Ir.
         neighbors = mol.GetAtomWithIdx(matches[0][0]).GetNeighbors()
 
-        # For bidentates, there should be exactly 2 neighbors
+        # For bidentates, there should be exactly 2 neighbors.
         if len(neighbors) != 2:
             print("There are not two neighbors to the Ir")
             return None, None
@@ -340,11 +326,11 @@ def process_substitute_attachment_points_bidentate(mol):
             print(e)
             return None, None
 
-        # Loop through neighbors to create connection_id list
+        # Loop through neighbors to create connection IDs list.
         connection_ids = []
         for n in neighbors:
             id = n.GetIdx()
-            # If Be, we get the id later after Be removal.
+            # If Be, we get the ID later, after Be removal.
             if n.GetSymbol() == "Be":
                 continue
 
@@ -376,13 +362,10 @@ def process_substitute_attachment_points_bidentate(mol):
                 res.RemoveAtom(match[0])
 
                 # The idx of the new carbene will decrease with number of Be removed, if the
-                # idx of the carbene i larger than the Be idx. This is a bit of a hack.
+                # idx of the carbene is larger than the Be idx.
                 idx_decrease = sum(i[0] < carbene_neighbor_idx for i in be_match)
-                # TL: { hack to fix the hack{
                 if connection_ids and idx_decrease == 0 and len(be_match) == 1:
-                    connection_ids[0] -= 1  # always one?
-                    # print("Decreasing index of non-Be neighbour by 1")
-                # }
+                    connection_ids[0] -= 1
                 carbene_neighbor_idx = carbene_neighbor_idx - idx_decrease
                 connection_ids.append(carbene_neighbor_idx)
             res.CommitBatchEdit()
@@ -393,9 +376,19 @@ def process_substitute_attachment_points_bidentate(mol):
 
 
 def get_neighbors_bidentate(mol: Chem.rdchem.Mol) -> list:
+    """For the Mol object of a bidentate ligand constructed from an encoded
+    SMILES string, find the IDs of the connection atoms before removing the
+    extra atoms of the encoding.
+
+    Args:
+        mol (Chem.rdchem.Mol): from encoded SMILES string.
+
+    Returns:
+        list: the IDs of the connection atoms in the Mol object.
+    """
     connection_ids = (
         []
-    )  # atom IDs of the connection atoms before removing the enrichment atom(s).
+    )  # Atom IDs of the connection atoms before removing the encoding atom(s).
     substitute_smarts = Chem.MolFromSmarts("[Ir]")
     matches = mol.GetSubstructMatches(substitute_smarts)
     if len(matches) == 1:
@@ -403,14 +396,22 @@ def get_neighbors_bidentate(mol: Chem.rdchem.Mol) -> list:
         neighbors = atom.GetNeighbors()
         assert len(neighbors) > 0
         for neighbor in neighbors:
-            connection_ids.append(neighbor.GetIdx())
+            if neighbor.GetSymbol() not in ["Be", "Li", "Ir"]:
+                connection_ids.append(neighbor.GetIdx())
+            else:
+                nextneighbors = neighbor.GetNeighbors()
+                assert len(neighbors) > 0
+                for nextneighbor in nextneighbors:
+                    if nextneighbor.GetSymbol() not in ["Be", "Li", "Ir"]:
+                        connection_ids.append(nextneighbor.GetIdx())
+                        break
         return connection_ids
     else:
         return None
 
 
-def read_file(file_name, num_mols):
-    """Read smiles from file and return Mol generator."""
+def read_file(file_name: Path, num_mols: int) -> list:
+    """Read SMILES from file and return as list."""
     mols = []
     with open(file_name, "r") as file:
         for i, smiles in enumerate(file):
@@ -452,9 +453,9 @@ def compare_dataframes(
         how="inner",
         on=[
             atom_counting_mode,
-            "Canonical SMILES",
+            "Decoded SMILES",
             "Connection IDs",
-            "Enriched SMILES",
+            "Encoded SMILES",
             "Coordination environment",
         ],
     )
@@ -464,9 +465,9 @@ def compare_dataframes(
         how="outer",
         on=[
             atom_counting_mode,
-            "Canonical SMILES",
+            "Decoded SMILES",
             "Connection IDs",
-            "Enriched SMILES",
+            "Encoded SMILES",
             "Coordination environment",
         ],
     )
@@ -474,3 +475,147 @@ def compare_dataframes(
         return 1.0
     row_accuracy = float(rows_intersect.shape[0]) / rows_union.shape[0]
     return row_accuracy
+
+
+def get_elem_counter_hless(mol):
+    elem_counter = defaultdict(int)
+    for atom in mol.GetAtoms():
+        sym = atom.GetSymbol()
+        if sym != "H":
+            elem_counter[sym] += 1
+    return dict(sorted(elem_counter.items(), key=lambda item: item[0]))
+
+
+def check_structural_match(mol1: Chem.rdchem.Mol, mol2: Chem.rdchem.Mol) -> bool:
+    """Attempt in various way to match two Mol objects.
+
+    Args:
+        mol1 (Chem.rdchem.Mol): the first Mol to match.
+        mol2 (Chem.rdchem.Mol): the second Mol to match.
+
+    Returns:
+        True if matched, otherwise False.
+    """
+    assert mol1 is not None and mol2 is not None
+    # Compare initial input Mols.
+    if mol1.HasSubstructMatch(mol2) and mol2.HasSubstructMatch(mol1):
+        return True
+    # Try to ensure both Mols are stripped of implicit Hydrogens
+    try:
+        mol1_hless = Chem.RemoveHs(mol1)
+        mol2_hless = Chem.RemoveHs(mol2)
+        if mol1_hless.HasSubstructMatch(mol2_hless) and mol2_hless.HasSubstructMatch(
+            mol1_hless
+        ):
+            return True
+    except Exception:
+        pass
+    try:
+        mol1_hless = Chem.RemoveAllHs(mol1)
+        mol2_hless = Chem.RemoveAllHs(mol2)
+        if mol1_hless.HasSubstructMatch(mol2_hless) and mol2_hless.HasSubstructMatch(
+            mol1_hless
+        ):
+            return True
+    except Exception:
+        pass
+    try:
+        mol1_hfull = Chem.AddHs(mol1_hless)
+        mol2_hfull = Chem.AddHs(mol2_hless)
+        if mol1_hfull.HasSubstructMatch(mol2_hfull) and mol2_hfull.HasSubstructMatch(
+            mol1_hfull
+        ):
+            return True
+    except Exception:
+        pass
+    return False
+
+
+def compare_encoded_smiles_structures(
+    df_output: pd.DataFrame, df_expect: pd.DataFrame, denticity: str = "monodentate"
+) -> float:
+    """Compare two sets of encoded SMILES of ligands to find their proportional
+    overlap, i.e., accuracy, not as verbatim strings but as Mol objects.
+
+    Args:
+        df_output (pd.DataFrame): encoded SMILES, the reproduced output from the process step.
+        df_expect (pd.DataFrame): encoded SMILES, the expected output read from file.
+        denticity (str, optional): the denticity of all the ligands.
+
+    Returns:
+        The accuracy score based on matched Mol structures.
+    """
+    output_mol_dict = defaultdict(list)
+    expect_mol_dict = defaultdict(list)
+    if denticity == "monodentate":
+        process_function = process_substitute_attachment_points
+    elif denticity == "bidentate":
+        process_function = process_substitute_attachment_points_bidentate
+
+    for i, row in df_expect.iterrows():
+        encoded_smiles = row["Encoded SMILES"]
+        mol = Chem.MolFromSmiles(encoded_smiles)
+        new_mol, _ = process_function(mol)
+        if new_mol is None:
+            continue
+        query_elems = str(get_elem_counter_hless(new_mol))
+        expect_mol_dict[query_elems].append(
+            {"Encoded SMILES": encoded_smiles, "mol": new_mol}
+        )
+
+    for i, row in df_output.iterrows():
+        ligand_id = row["tmQMg-L ligand ID"]
+        encoded_smiles = row["Encoded SMILES"]
+        mol = Chem.MolFromSmiles(encoded_smiles)
+        new_mol, _ = process_function(mol)
+        if new_mol is None:
+            continue
+        query_elems = str(get_elem_counter_hless(new_mol))
+        output_mol_dict[query_elems].append(
+            {
+                "Encoded SMILES": encoded_smiles,
+                "mol": new_mol,
+                "tmQMg-L ligand ID": ligand_id,
+            }
+        )
+
+    output_to_expect_strucmatch_dict = {}
+    matched_orig_encoded_smiles = set()
+
+    for element_key, reprod_vals in output_mol_dict.items():
+        orig_vals = expect_mol_dict[element_key]
+        for reprod_val in reprod_vals:
+            reprod_encoded_smiles = reprod_val["Encoded SMILES"]
+            reprod_mol = reprod_val["mol"]
+            ligand_id = reprod_val["tmQMg-L ligand ID"]
+            for orig_val in orig_vals:
+                orig_encoded_smiles = orig_val["Encoded SMILES"]
+                if orig_encoded_smiles in matched_orig_encoded_smiles:
+                    continue
+                orig_mol = orig_val["mol"]
+                if check_structural_match(reprod_mol, orig_mol):
+                    output_to_expect_strucmatch_dict[reprod_encoded_smiles] = {
+                        "Original encoded SMILES": orig_encoded_smiles,
+                        "tmQMg-L ligand ID": ligand_id,
+                    }
+                    matched_orig_encoded_smiles.add(orig_encoded_smiles)
+                    break
+
+    unmatched_orig_encoded_smiles = set()
+    for i, row in df_expect.iterrows():
+        encoded_smiles = row["Encoded SMILES"]
+        if encoded_smiles not in matched_orig_encoded_smiles:
+            unmatched_orig_encoded_smiles.add(encoded_smiles)
+
+    unmatched_reprod_encoded_smiles = set()
+    for i, row in df_expect.iterrows():
+        encoded_smiles = row["Encoded SMILES"]
+        if encoded_smiles not in output_to_expect_strucmatch_dict.keys():
+            unmatched_reprod_encoded_smiles.add(encoded_smiles)
+    structure_accuracy = len(matched_orig_encoded_smiles) / (
+        len(matched_orig_encoded_smiles)
+        + len(unmatched_orig_encoded_smiles)
+        + len(unmatched_reprod_encoded_smiles)
+    )
+
+    return structure_accuracy
