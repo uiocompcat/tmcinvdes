@@ -37,3 +37,13 @@ environment/install_xtb_stda.sh
 run.out
 nul
 ligands_dict_xyz.json
+
+# Miscellaneous
+**/run.out
+**/nul
+**/ligands_dict_xyz.json
+**/**/.ibynb_checkpoints
+**/*-checkpoint.ipynb
+**/CLIinput.inp
+**/*_test.sdf
+**/*_test.xyz
