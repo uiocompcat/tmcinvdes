@@ -286,11 +286,11 @@ if __name__ == "__main__":
         if xtent == "demo":  # Constrain how many instances to process.
             if args.optimized:
                 demo_ligand_ids = [
-                    "cond_mono-O6_optimized-uncond_mono-min15k-352",
-                    "cond_mono-O4_optimized-uncond_mono-min15k-1464",
-                    "cond_mono-O5_optimized-uncond_mono-min15k-4135",
-                    "cond_mono-O4_optimized-uncond_mono-min15k-4357",
-                    "cond_mono-O3_optimized-uncond_mono-min15k-4842",
+                    "cond_mono-O5_optimized-uncond_mono-min15k-6",
+                    "cond_mono-O7_optimized-uncond_mono-min15k-6",
+                    "cond_mono-O8_optimized-uncond_mono-min15k-6",
+                    "cond_mono-O6_optimized-uncond_mono-min15k-6",
+                    "cond_mono-O1_optimized-uncond_mono-min15k-6",
                 ]
             else:
                 demo_ligand_ids = [
