@@ -7,7 +7,7 @@ repos:
       - id: check-yaml
         args: ["--unsafe"]
       - id: check-added-large-files
-        args: ["--maxkb=22000"]
+        args: ["--maxkb=30000"]
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
     # Ruff version.

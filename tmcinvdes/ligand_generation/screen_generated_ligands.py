@@ -5,15 +5,13 @@ The script also screens out generated ligands that are invalid.
 The training set is necessary as a reference to determine which ligands are novel relative to the
 training set.
 
-Usage:
+Usage: (from root directory of repository)
 
-python screen_generated_ligands.py -d denticity -i input_dir -o output_dir -t training_set_dir -x test
-
-python screen_generated_ligands.py -d bidentate \
-         -i ../datasets/03_uncond-raw50k-generated_ligands \
-         -o ../datasets/04_uncond-novel \
-         -t ../datasets/01_tmQMg-L-training_sets \
-         -x test
+python -m tmcinvdes.ligand_generation.screen_generated_ligands.py -d bidentate \
+                                                -i datasets/03_uncond-raw50k-generated_ligands \
+                                                -o datasets/04_uncond-novel \
+                                                -t datasets/01_tmQMg-L-training_sets \
+                                                -x test
 """
 
 import argparse
