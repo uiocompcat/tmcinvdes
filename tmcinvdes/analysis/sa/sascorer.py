@@ -24,9 +24,37 @@ import pickle
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
 
-from utils.gaussians import gaussian_modifier_clipped
 
 _fscores = None
+
+
+def gaussian_modifier(score: float, target: float, sigma: float) -> float:
+    """Modifies a score to a fitness to a target using a gaussian distribution
+    If the score matches the target value, the function evaluates to 1. The
+    width of the distribution is controlled through sigma.
+
+    :param score: the score to evaulate fitness for
+    :param target: the target value to use for fitness evaluation
+    :param sigma: the width of the distribution
+    :return: the fitness evaluated as a gaussian
+    """
+    score = np.exp(-0.5 * np.power((score - target) / sigma, 2.0))
+    return score
+
+
+def gaussian_modifier_clipped(score: float, target: float, sigma: float) -> float:
+    """Modifies a score with a clipped gaussian modifier The clipped gaussian
+    modifier is evaluated to 1 for scores below the target, but drops off as
+    the gaussian modifier (towards zero) for values larger than the target. The
+    width of the distribution is controlled through sigma.
+
+    :param score: the score to evaulate fitness for
+    :param target: the target value to use for fitness evaluation
+    :param sigma: the width of the distribution
+    :return: the fitness evaluated as a gaussian
+    """
+    mod_score = np.maximum(score, target)
+    return gaussian_modifier(mod_score, target, sigma)
 
 
 def sa_target_score_clipped(
@@ -191,10 +219,11 @@ if __name__ == "__main__":
     readFragmentScores("fpscores")
     t2 = time.time()
 
-    suppl = Chem.SmilesMolSupplier(sys.argv[1])
+    mol = Chem.MolFromSmiles("CCCCCCCN")
     t3 = time.time()
-    processMols(suppl)
+    score = calculateScore(mol)
     t4 = time.time()
+    print(f"Score: {score:.3f}")
 
     print(
         "Reading took %.2f seconds. Calculating took %.2f seconds"
