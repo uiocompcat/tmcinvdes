@@ -52,7 +52,7 @@ Note that the 13 major bullet points below correspond to the directories into wh
 - **5. Rank by size, select smaller subset:** `-min15k` or `-min10k`
   - Note: we make a contraction here for brevity, taking `-minXk` to imply `-raw50k-novel-minXk`.
   - While the previous stage did not have an inherent ordering of ligands, this stage does, and we introduce identities for the ligands.
-  - Difference: monodentate ligands are ordered by heavy atoms while bidentate ligands are ordered by total number of atoms, including Hydrogen.
+  - Difference: monodentate ligands are ordered by heavy atoms while bidentate ligands are ordered by total number of atoms, including hydrogen.
   - Filenames:
     - `uncond_mono-min15k.csv`
     - `uncond_bi-min10k.csv`

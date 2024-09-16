@@ -500,7 +500,7 @@ def check_structural_match(mol1: Chem.rdchem.Mol, mol2: Chem.rdchem.Mol) -> bool
     # Compare initial input Mols.
     if mol1.HasSubstructMatch(mol2) and mol2.HasSubstructMatch(mol1):
         return True
-    # Try to ensure both Mols are stripped of implicit Hydrogens
+    # Try to ensure both Mols are stripped of implicit hydrogen atoms.
     try:
         mol1_hless = Chem.RemoveHs(mol1)
         mol2_hless = Chem.RemoveHs(mol2)
