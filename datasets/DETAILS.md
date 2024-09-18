@@ -124,7 +124,7 @@ Note that the 13 major bullet points below correspond to the directories into wh
         - `"Low HOMO-LUMO gap (eV)"`
         - `"High HOMO-LUMO gap (eV)"`
         - `"Low metal center charge"`
-    - `Optimization objective`: a simplified expression corresponding to the objective function used to optimize the ligand. Here $\epsilon$ is the HOMO-LUMO gap (eV) and $q\_\text{Ir}$ is the metal center charge.
+    - `Optimization objective`: a simplified expression corresponding to the objective function used to optimize the ligand. Here $\epsilon$ is the HOMO-LUMO gap (eV) and $q_\text{Ir}$ is the metal center charge.
       - Values:
         - $\epsilon$
         - $q_\text{Ir}$
