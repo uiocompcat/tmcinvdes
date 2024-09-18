@@ -67,8 +67,8 @@ Any currently outstanding scripts will be added soon.
   - `bash/sample_ligands_to_optimize-monodentate.sh`
 - $\mathbf{(10 \rightarrow 11)}$: Optimize sampled ligands. See our [JT-VAE-tmcinvdes](https://github.com/Strandgaard96/JT-VAE-tmcinvdes/) repository.
 - $\mathbf{(11 \rightarrow 12)}$: Assemble TMC structures as XYZ blocks in concatenated output file. (New Bash files but re-used Python script.)
-  - `tmcinvdes/structure_generation/assemble_tmcs.py` *(Re-used from $\mathbf{(5 \rightarrow 6)}$.)*
+  - `tmcinvdes/structure_generation/assemble_tmcs.py` *(Re-used from* $\mathbf{(5 \rightarrow 6)}$*.)*
   - `bash/assemble_tmcs-monodentate-cond_mono-sampled_optimized.sh`
 - $\mathbf{(12 \rightarrow 13)}$: Label TMCs by ORCA calculations on TMCs. The ORCA calculations are done on HPC, the present Python file only parses the ORCA output files. (New Bash files but re-used Python script.)
-  - `tmcinvdes/quantum_chemistry/orca/parse_orca_to_labels.py` *(Re-used from * $\mathbf{(6 \rightarrow 7)}$ *.)*
+  - `tmcinvdes/quantum_chemistry/orca/parse_orca_to_labels.py` *(Re-used from* $\mathbf{(6 \rightarrow 7)}$*.)*
   - `bash/parse_orca_to_labels-monodentate-cond_mono-sampled_optimized.sh`
