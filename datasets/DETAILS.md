@@ -127,9 +127,9 @@ Note that the 13 major bullet points below correspond to the directories into wh
     - `Optimization objective`: a simplified expression corresponding to the objective function used to optimize the ligand. Here $\epsilon$ is the HOMO-LUMO gap (eV) and $q\_\text{Ir}$ is the metal center charge.
       - Values:
         - $\epsilon$
-        - $q\_\text{Ir}$
-        - $\epsilon + q\_\text{Ir}$
-        - $\epsilon - q\_\text{Ir}$
+        - $q_\text{Ir}$
+        - $\epsilon + q_\text{Ir}$
+        - $\epsilon - q_\text{Ir}$
     - `Minimization`: bool, whether to minimize or maximize the optimization objective.
     - `Original encoded SMILES`: str
     - `Optimized encoded SMILES`: str
