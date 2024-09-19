@@ -1,14 +1,14 @@
-# Detailed Experimental Workflow
+# Detailed Computational Workflow
 
 ## Overview
 
-Every data workflow stage under [datasets/DETAILS.md](datasets/DETAILS.md) that relies on the code in the present repository can be reproduced by one Python script (`tmcinvdes/.../{process_verb}.py`) being called by two Bash scripts (`bash/{process_verb}-{denticity}-{specifications}.sh`). Reproduction is not always perfect, and further details on this aspect are available [here](REPRODUCIBILITY.md). *(The `-{specifications}` can be used to distinguish Bash files where the Python script is used to produce more than one stage, i.e., for assembling TMC structures, and for parsing ORCA output files to label TMCs/ligands after ORCA calculations.)*
+Every data workflow stage under [datasets/DETAILS.md](datasets/DETAILS.md) that relies on the code in the present repository can be performed by one Python script (`tmcinvdes/.../{process_verb}.py`) being called by two Bash scripts (`bash/{process_verb}-{denticity}-{specifications}.sh`). *(The `-{specifications}` can be used to distinguish Bash files where the Python script is used to produce more than one stage, i.e., for assembling TMC structures, and for parsing ORCA output files to label TMCs/ligands after ORCA calculations.)*
 
 In other words, the Python script structures the general process for both the monodentate and bidentate cases, whereas the Bash scripts represent the nominal run of that process for the monodentate or bidentate case.
 
 ## Extent (`--xtent (-x)`)
 
-We use the flag `--xtent` or `-x` to differentiate the extent to which the Python script should run. This generally differentiates between writing results to disk or testing in-memory reproduced results.
+We use the flag `--xtent` or `-x` to differentiate the extent to which the Python script should run. This generally differentiates between writing results to disk or testing in-memory results.
 
 - In the `full` case, the process runs in its entirety and writes the output results to file.
 - In the `test` case, the process runs in its entirety and compares the results to the output already existing in the designated output file.
@@ -25,7 +25,7 @@ For example:
 sh bash/screen_generated_ligands-bidentate.sh
 ```
 
-This will recapitulate the screening of generated ligands from `uncond_bi` and verify that the results are reproducible.
+This will recapitulate the screening of generated ligands from `uncond_bi` and compare with the results on file.
 
 ## Workflow Structure
 
