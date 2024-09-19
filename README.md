@@ -31,6 +31,21 @@ Contains the code for analyzing and processing data.
 
 For nominal runs of the present code, shared both as explicit usage examples and to test reproducibility, see the [detailed workflow](DETAILS.md).
 
+### Citation
+
+If you find our work useful, please cite our article:
+
+```
+@article{Strandgaard:2022:ChemRxiv,
+  author    = {Magnus Strandgaard, Trond Linjordet, Hannes Kneiding, Arron Burnage, Ainara Nova, Jan Halborg Jensen, David Balcells}
+  title     = {Deep Generative Model for the Dual-Objective Inverse Design of Metal Complexes},
+  journal   = {ChemRxiv},
+  volume    = {preprint},
+  doi       = {10.26434/chemrxiv-2024-mzs7b},
+  year      = {2024},
+}
+```
+
 ### Work in Progress
 
 This repository represents work in progress, meaning that data and code will be gradually added.
