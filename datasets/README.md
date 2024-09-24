@@ -6,4 +6,4 @@ The code used to train the models can be found at: [JT-VAE-tmcinvdes](https://gi
 
 The fork also contains code to do unconditional generation and directional optimization in latent space, i.e., conditional generation.
 
-For detailed descriptions of datafiles in the subdirectories [here](datasets/), see [DETAILS.md](DETAILS.md).
+For detailed descriptions of datafiles in the subdirectories here, see [DETAILS.md](DETAILS.md).
