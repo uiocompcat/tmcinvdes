@@ -21,6 +21,8 @@ def compare_dataframes(
         float: accuracy as a number between 0.0 and 1.0 representing the proportion of overlapping
         identical rows between the dataframes being compared.
     """
+    df_output = df_output.round(6)
+    df_expect = df_expect.round(6)
     rows_intersect = pd.merge(
         df_output,
         df_expect,

@@ -70,6 +70,7 @@ Note that the 13 major bullet points below correspond to the directories into wh
   - Filenames:
     - `uncond_mono-min15k-TMC.xyz`
     - `uncond_bi-min10k-TMC.xyz`
+    - `orca.inp`: the representative ORCA input file used for DFT calculations on individual XYZ files for each TMC.
 - **7. Label ligands with DFT calculations on TMCs geometry optimizations, HOMO-LUMO gap, and metal center charge:** `-labeled`
   - The XYZ files generated from the ligand subsets are `labeled` with DFT properties calculated using ORCA, and the results were associated with the respective ligands.
     - For bidentate ligand-based TMCs, DFT calculations are performed only on those homoleptic TMCs from stage 6 where both isomer forms were successfully assembled for a given ligand.
@@ -137,6 +138,7 @@ Note that the 13 major bullet points below correspond to the directories into wh
     - `Original metal center charge`: float from stage 7.
     - `Original HOMO-LUMO gap (Eh)`: float from stage 7.
     - `Original HOMO-LUMO gap (eV)`: float from stage 7.
+    - `Original XYZ`: str, from stage 7.
 - **12. Generate XYZ structures of homoleptic TMCs using molSimplify:** `-TMC` (re-used)
   - Filename:
     - `cond_mono-sampled_optimized-TMC.xyz`
