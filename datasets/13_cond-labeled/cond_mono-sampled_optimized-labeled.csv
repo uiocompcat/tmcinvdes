@@ -1,4 +1,4 @@
-Label ID,Original ligand ID,Optimized ligand ID,Original decoded SMILES,Sampling region,Optimization objective,Minimization,Original encoded SMILES,Optimized encoded SMILES,Tanimoto smiliarity,Original metal center charge,Optimized metal center charge,Original HOMO-LUMO gap (Eh),Original HOMO-LUMO gap (eV),Optimized HOMO-LUMO gap (eV),Original XYZ,Optimized XYZ
+Label ID,Original ligand ID,Optimized ligand ID,Original decoded SMILES,Sampling region,Optimization objective,Minimization,Original encoded SMILES,Optimized encoded SMILES,Tanimoto similarity,Original metal center charge,Optimized metal center charge,Original HOMO-LUMO gap (Eh),Original HOMO-LUMO gap (eV),Optimized HOMO-LUMO gap (eV),Original XYZ,Optimized XYZ
 5941,uncond_mono-min15k-49,cond_mono-O6_optimized-uncond_mono-min15k-49,ON1CC1,High HOMO-LUMO gap (eV),$\epsilon - q_	ext{Ir}$,True,[Li]<-N1(O)CC1,[Li]<-N1(O)CC1C=C,0.2727272727272727,0.2222278724718792,0.2262651629608195,0.18251,4.966352001005123,4.749994186310067,"37
 #
 Ir  -0.04514 0.071542 -0.018522
