@@ -14,6 +14,7 @@ Usage: (from root directory of repository)
 python -m tmcinvdes.quantum_chemistry.parse_orca_to_labels -d bidentate \
                                     -i tmp_results/orca_out-uncond_bi-min10k-TMC/ \
                                     -o datasets/07_uncond-labeled/uncond_bi-min10k-labeled.csv \
+                                    -s datasets/05_uncond-minXk/uncond_bi-min10k.csv \
                                     -x test
 """
 
@@ -21,10 +22,17 @@ import argparse
 import os
 from pathlib import Path
 
+import morfeus
 import pandas as pd
 from parse import parse
+from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 from scipy import constants
 
+from tmcinvdes.ligand_generation.utils import (
+    process_substitute_attachment_points,
+    process_substitute_attachment_points_bidentate,
+)
 from tmcinvdes.quantum_chemistry.orca_parsers import get_orca_results, repackage_xyz
 from tmcinvdes.utils import compare_dataframes
 
@@ -74,8 +82,18 @@ def parse_args(arg_list: list = None) -> argparse.Namespace:
         type=Path,
         default="datasets/11_cond-optimized/cond_mono-sampled_optimized.csv",
         required=False,
-        help="""If ligands were optimized, additional reference input file of optimized ligands
-        used to construct input TMCs.""",
+        help="""If ligands were optimized, provide an additional reference input file of optimized
+        ligands used to construct input TMCs. Conditionally required argument.""",
+    )
+    parser.add_argument(
+        "--smiles_reference",
+        "-s",
+        type=Path,
+        default="datasets/05_uncond-minXk/uncond_bi-min10k.csv",
+        required=False,
+        help="""If input TMCs were constructed from unconditionally generated bidenate ligands,
+        provide an additional reference input file to the decoded SMILES. Conditionally required
+        argument.""",
     )
     parser.add_argument(
         "--type",
@@ -99,19 +117,139 @@ def parse_args(arg_list: list = None) -> argparse.Namespace:
     return parser.parse_args(arg_list)
 
 
+def get_g_parameter(xyz: str, num_ligands: int) -> float:
+    """Obtain the solid angle G parameter of a single ligand from a homoleptic
+    TMC geometry.
+
+    Args:
+        xyz (str): the geometry of a homoleptic TMC.
+        num_ligands (int): the number of identical ligands in the TMC.
+
+    Returns:
+        The G parameter.
+    """
+    xyz_lines = [line.rstrip() for line in xyz.rstrip("\n\n").split("\n")]
+    num_atoms = int(xyz_lines[0])
+    assert xyz_lines[2][:2] == "Ir"
+    assert len(xyz_lines) == 2 + num_atoms  #:
+
+    offset = (num_atoms - 1) / num_ligands
+    assert 2 * (int(offset)) == int(2 * offset)
+    offset = int(offset)
+
+    xyz_lines = xyz_lines[: 3 + offset]
+    new_num_atoms = 1 + offset
+    xyz_lines[0] = str(new_num_atoms)
+    xyz = "\n".join(xyz_lines)
+
+    # read xyz into MORFEUS
+    tmp_filename = "temp.xyz"
+    with open(tmp_filename, "w") as fh:
+        fh.write(xyz)
+    elements, coordinates = morfeus.read_xyz(tmp_filename)
+    solid_angle_calculator = morfeus.SolidAngle(elements, coordinates, 1)
+    g_parameter = solid_angle_calculator.G
+    return g_parameter
+
+
+def add_ligand_descriptors(
+    df: pd.DataFrame, denticity, optimized: bool = False, df_smiles: pd.DataFrame = None
+) -> pd.DataFrame:
+    """Add ligand descriptors of individual ligands.
+
+    Specifically, this function evaluates and adds the descriptors log P and solid angle
+    G parameter to the output dataframe.
+
+    Args:
+        df (pd.DataFrame): dataframe to be extended.
+        denticity (str): the shared denticity of all the ligands in the batch.
+        optimized (bool, optional): whether the TMCs are made with optimized ligands. Defaults to False.
+        df_smiles (pd.DataFrame, optional): reference for decoded SMILES. Defaults to None.
+
+    Returns:
+        The extended dataframe.
+    """
+    if denticity == "monodentate":
+        num_ligands = 4
+    elif denticity == "bidentate":
+        num_ligands = 2
+
+    if optimized:
+        ref_smiles_column = "Optimized encoded SMILES"
+        ref_xyz_column = "Optimized XYZ"
+        ref_smiles_are_encoded = True
+    else:
+        if denticity == "monodentate":
+            ref_smiles_column = "Labeled SMILES"
+        elif denticity == "bidentate":
+            ref_smiles_column = "Decoded SMILES"
+        ref_xyz_column = "XYZ"
+        ref_smiles_are_encoded = False
+
+    decoded_smilesx = []
+    decoded_mols = []
+    log_ps = []
+    g_params = []
+    for i, row in df.iterrows():
+        if df_smiles is not None:
+            ligand_id = row["Ligand ID"]
+            df_temp = df_smiles[df_smiles["Ligand ID"] == ligand_id]
+            assert df_temp.shape[0] == 1
+            decoded_smiles = df_temp["Decoded SMILES"].values[0]
+            decoded_mol = Chem.MolFromSmiles(decoded_smiles)
+        else:
+            smiles = row[ref_smiles_column]
+            if ref_smiles_are_encoded:
+                encoded_mol = Chem.MolFromSmiles(smiles)
+                if denticity == "monodentate":
+                    decoded_mol, _ = process_substitute_attachment_points(encoded_mol)
+                elif denticity == "bidentate":
+                    decoded_mol, _ = process_substitute_attachment_points_bidentate(
+                        encoded_mol
+                    )
+                decoded_smiles = Chem.MolToSmiles(decoded_mol)
+            else:
+                decoded_smiles = smiles
+                decoded_mol = Chem.MolFromSmiles(decoded_smiles)
+        decoded_smilesx.append(decoded_smiles)
+        decoded_mols.append(decoded_mol)
+        if decoded_mol is None:
+            print(f"{i}: could not make a Mol object from {decoded_smiles}.")
+            log_p = None
+        else:
+            log_p = rdMolDescriptors.CalcCrippenDescriptors(decoded_mol)[0]
+        log_ps.append(log_p)
+
+        xyz = row[ref_xyz_column]
+        g_param = get_g_parameter(xyz, num_ligands)
+        g_params.append(g_param)
+
+    if optimized:
+        df["Optimized log P"] = log_ps
+        df["Optimized G parameter"] = g_params
+    else:
+        df["log P"] = log_ps
+        df["G parameter"] = g_params
+
+    return df
+
+
 def batch_parse_orca_logs(
     input_dir: Path,
     denticity: str,
     columns: list,
     optimized: bool = False,
+    df_smiles: pd.DataFrame = None,
 ) -> pd.DataFrame:
     """Parse from a directory a batch of ORCA logfiles named according to the
-    respective TMCs.
+    respective homoleptic TMCs.
 
     Args:
         input_dir (Path): directory to ORCA logs of normally terminating TMC calculations.
-        denticity (str): the shared denticity of all the TMCs in the batch.
+        denticity (str): the shared denticity of all the ligands in the batch.
         columns (list): the column names to include in the output dataframe.
+        optimized (bool): whether the TMCs are made with optimized ligands. Defaults to False.
+        df_smiles (pd.DataFrame): reference for decoded SMILES.
 
     Returns:
         The output dataframe with the parsed TMC labels and optimized geometry.
@@ -119,9 +257,13 @@ def batch_parse_orca_logs(
     files = os.listdir(input_dir)
     files = [f for f in files if os.path.isfile(os.path.join(input_dir, f))]
     if denticity == "monodentate":
-        filename_pattern = "{ligand_id}.out"  # E.g.: uncond_mono-min15k-356.out
+        # E.g.: uncond_mono-min15k-356.out
+        filename_pattern = "{ligand_id}.out"
     elif denticity == "bidentate":
-        filename_pattern = "{ligand_series_part1}-{ligand_series_part2}-{n}-{isomer}.out"  # E.g.: uncond_bi-min10k-9850-trans.out
+        # E.g.: uncond_bi-min10k-9850-trans.out
+        filename_pattern = (
+            "{ligand_series_part1}-{ligand_series_part2}-{n}-{isomer}.out"
+        )
 
     data_dict = {key: [] for key in columns}
 
@@ -154,6 +296,7 @@ def batch_parse_orca_logs(
         metal_charge = res["cm5"]["QCM5"][0]
         homo_lumo_gap = res["homo_lumo_energy"]
         atoms, coords = res["opt_structure"]
+        electronic_single_point_energy = res["electronic_energy"]
 
         if optimized:
             # Eh_to_eV
@@ -166,6 +309,9 @@ def batch_parse_orca_logs(
             data_dict["Optimized metal center charge"].append(metal_charge)
             name = str(f)[:-4]
             data_dict["Optimized XYZ"].append(repackage_xyz(name, atoms, coords))
+            data_dict["Optimized final single point energy (Eh)"].append(
+                electronic_single_point_energy
+            )
         else:
             data_dict["Ligand ID"].append(ligand_id)
             if isomer is not None:
@@ -174,6 +320,9 @@ def batch_parse_orca_logs(
             data_dict["Metal center charge"].append(metal_charge)
             name = str(f)[:-4]
             data_dict["XYZ"].append(repackage_xyz(name, atoms, coords))
+            data_dict["Final single point energy (Eh)"].append(
+                electronic_single_point_energy
+            )
         df = pd.DataFrame.from_dict(data_dict)
     df = df[columns]
     return df
@@ -231,10 +380,26 @@ if __name__ == "__main__":
         df_optimized = pd.read_csv(reference_optimization_path)
     output_csv_path = os.path.abspath(args.output_file)
     output_xyz_path = os.path.abspath(str(args.output_file)[:-4] + ".xyz")
+    df_smiles = None
 
     if not optimized:
         if denticity == "monodentate":
-            columns = ["Ligand ID", "HOMO-LUMO gap (Eh)", "Metal center charge", "XYZ"]
+            columns = [
+                "Ligand ID",
+                "HOMO-LUMO gap (Eh)",
+                "Metal center charge",
+                "XYZ",
+                "Final single point energy (Eh)",
+                "log P",
+                "G parameter",
+            ]
+            parsing_columns = [
+                "Ligand ID",
+                "HOMO-LUMO gap (Eh)",
+                "Metal center charge",
+                "XYZ",
+                "Final single point energy (Eh)",
+            ]
         elif denticity == "bidentate":
             columns = [
                 "Ligand ID",
@@ -242,8 +407,21 @@ if __name__ == "__main__":
                 "HOMO-LUMO gap (Eh)",
                 "Metal center charge",
                 "XYZ",
+                "Final single point energy (Eh)",
+                "log P",
+                "G parameter",
             ]
-        parsing_columns = columns
+            parsing_columns = [
+                "Ligand ID",
+                "Isomer",
+                "HOMO-LUMO gap (Eh)",
+                "Metal center charge",
+                "XYZ",
+                "Final single point energy (Eh)",
+            ]
+        reference_smiles_path = os.path.abspath(args.smiles_reference)
+        df_smiles = pd.read_csv(reference_smiles_path)
+
     elif optimized:
         if denticity == "monodentate":
             columns = [
@@ -264,12 +442,19 @@ if __name__ == "__main__":
                 "Optimized HOMO-LUMO gap (eV)",
                 "Original XYZ",
                 "Optimized XYZ",
+                "Original final single point energy (Eh)",
+                "Optimized final single point energy (Eh)",
+                "Original log P",
+                "Optimized log P",
+                "Original G parameter",
+                "Optimized G parameter",
             ]
             parsing_columns = [
                 "Optimized ligand ID",
                 "Optimized metal center charge",
                 "Optimized HOMO-LUMO gap (eV)",
                 "Optimized XYZ",
+                "Optimized final single point energy (Eh)",
             ]
         elif denticity == "bidentate":
             columns = [
@@ -292,6 +477,12 @@ if __name__ == "__main__":
                 "Optimized HOMO-LUMO gap (eV)",
                 "Original XYZ",
                 "Optimized XYZ",
+                "Original final single point energy (Eh)",
+                "Optimized final single point energy (Eh)",
+                "Original log P",
+                "Optimized log P",
+                "Original G parameter",
+                "Optimized G parameter",
             ]
             parsing_columns = [
                 "Optimized ligand ID",
@@ -299,9 +490,13 @@ if __name__ == "__main__":
                 "Optimized metal center charge",
                 "Optimized HOMO-LUMO gap (eV)",
                 "Optimized XYZ",
+                "Optimized final single point energy (Eh)",
             ]
 
-    df_output = batch_parse_orca_logs(input_dir, denticity, parsing_columns, optimized)
+    df_output = batch_parse_orca_logs(
+        input_dir, denticity, parsing_columns, optimized, df_smiles
+    )
+    df_output = add_ligand_descriptors(df_output, denticity, optimized, df_smiles)
     if optimized:
         xyzs = df_output["Optimized XYZ"].values.tolist()
         df_output = combine_optimized_dataframes(
