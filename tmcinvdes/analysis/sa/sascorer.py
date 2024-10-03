@@ -128,6 +128,7 @@ def numBridgeheadsAndSpiro(mol, ri=None):
 
 
 def calculateScore(m):
+    "Calculated the raw SA score"
     if _fscores is None:
         readFragmentScores()
 
