@@ -2,16 +2,16 @@
 
 Public repository for the preprint ["Deep Generative Model for the Dual-Objective Inverse Design of Metal Complexes."](https://doi.org/10.26434/chemrxiv-2024-mzs7b)
 
-`tmcinvdes` will provide code and data from our research around junction tree variational autoencoder (JT-VAE) models that can generate metal ligands for transition metal complexes (TMCs). TMCs are used in industrial catalytic processes, anticancer therapies, and energy transformations. By labeling ligands with DFT-calculated target properties, conditional generative models can be trained and harnessed, optimizing metal ligands directionally in the target property space to discover novel, useful **TMC**s by **inv**erse **des**ign.
+`tmcinvdes` will provide code and data from our research around Junction Tree Variational Autoencoder (JT-VAE) models that can generate metal ligands for transition metal complexes (TMCs). TMCs are used in industrial catalytic processes, anticancer therapies, and energy transformations. By labeling ligands with DFT-calculated target properties, conditional generative models can be trained and harnessed, optimizing metal ligands directionally in the target property space to discover novel **TMC**s by **inv**erse **des**ign.
 
 <img align="center" src="concept_overview.png" alt="Inverse Design of Metal Complexes" width="800"/>
 
-The code used to train the JT-VAE models and generate ligands can be found at: [JT-VAE-tmcinvdes](https://github.com/Strandgaard96/JT-VAE-tmcinvdes).
+# The code used to train the JT-VAE models and generate ligands can be found at: [JT-VAE-tmcinvdes](https://github.com/Strandgaard96/JT-VAE-tmcinvdes).
 
 ## Code
 
 Follow the environment [setup instructions](/environment/README.md) to install all the dependencies of the code in this repository.
-The code also relies on a local download of the [tmQMg-L](https://github.com/hkneiding/tmQMg-L.git) repository.
+The code relies on a local download of the [tmQMg-L](https://github.com/hkneiding/tmQMg-L.git) repository and must therefore be cloned into a local folder.
 
 [Ligand generation](/tmcinvdes/ligand_generation)
 
