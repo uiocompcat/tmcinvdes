@@ -47,3 +47,4 @@ ligands_dict_xyz.json
 **/CLIinput.inp
 **/*_test.sdf
 **/*_test.xyz
+temp.xyz

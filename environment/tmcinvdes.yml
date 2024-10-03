@@ -31,12 +31,12 @@ dependencies:
   - brotli-python=1.1.0
   - bzip2=1.0.8
   - c-ares=1.20.1
-  - ca-certificates=2024.2.2
+  - ca-certificates=2024.8.30
   - cached-property=1.5.2
   - cached_property=1.5.2
   - cachetools=5.3.1
   - cairo=1.18.0
-  - certifi=2024.2.2
+  - certifi=2024.8.30
   - cffi=1.16.0
   - cfgv=3.3.1
   - charset-normalizer=3.3.1
@@ -62,6 +62,7 @@ dependencies:
   - executing=1.2.0
   - expat=2.5.0
   - filelock=3.12.4
+  - fire=0.6.0
   - flatbuffers=23.5.26
   - font-ttf-dejavu-sans-mono=2.37
   - font-ttf-inconsolata=3.000
@@ -192,7 +193,7 @@ dependencies:
   - libxml2=2.11.5
   - libzlib=1.2.13
   - lz4-c=1.9.4
-  - markdown=3.5
+  - markdown=3.5.2
   - markdown-it-py=3.0.0
   - markupsafe=2.1.3
   - matplotlib=3.8.0
@@ -203,6 +204,7 @@ dependencies:
   - mdurl=0.1.2
   - mistune=3.0.1
   - molsimplify=1.7.3
+  - morfeus-ml=0.7.2
   - mpg123=1.32.3
   - multidict=6.0.4
   - munkres=1.1.4
@@ -216,9 +218,9 @@ dependencies:
   - nbconvert-pandoc=7.9.2
   - nbformat=5.9.2
   - nccl=2.19.3.1
-  - ncurses=6.4
+  - ncurses=6.4.20240210
   - nest-asyncio=1.5.8
-  - networkx=3.2
+  - networkx=3.2.1
   - nodeenv=1.8.0
   - notebook=7.0.6
   - notebook-shim=0.2.3
@@ -228,7 +230,7 @@ dependencies:
   - oauthlib=3.2.2
   - openbabel=3.1.1
   - openjpeg=2.5.0
-  - openssl=3.1.5
+  - openssl=3.1.6
   - opt_einsum=3.3.0
   - overrides=7.4.0
   - packaging=23.2
@@ -270,7 +272,7 @@ dependencies:
   - pygments=2.16.1
   - pyjwt=2.8.0
   - pyopenssl=23.2.0
-  - pyparsing=3.1.1
+  - pyparsing=3.1.4
   - pyqt=5.15.9
   - pyqt5-sip=12.12.2
   - pysocks=1.7.1
@@ -380,7 +382,15 @@ dependencies:
   - zlib=1.2.13
   - zstd=1.5.5
   - pip:
-      - swifter
+      - dask==2024.8.0
+      - dask-expr==1.1.10
+      - fsspec==2024.9.0
+      - locket==1.0.0
       - matplotlib-venn==1.0.0a0
-      - git+https://github.com/hkneiding/uxtbpy
-      - git+https://github.com/jensengroup/xyz2mol
+      - partd==1.4.2
+      - pyarrow==17.0.0
+      - swifter==1.4.0
+      - toolz==0.12.1
+      - uxtbpy==0.1
+      - xyz2mol==0.1.2
+prefix: /home/tlinjordet/anaconda3/envs/tmcinvdes
