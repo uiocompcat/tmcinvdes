@@ -8,7 +8,7 @@ To generate the training sets run the following script. The [tmQMg-L](https://gi
 python get_encoded_smiles.py -i ~/git/tmQMg-L -o output_dir -d monodentate
 ```
 
-To generate ligands with the training sets see the [FastJTNNpy3](https://github.com/Strandgaard96/FastJTNNpy3) repo.
+To generate ligands with the training sets see the [JT-VAE-tmcinvdes](https://github.com/Strandgaard96/JT-VAE-tmcinvdes) repo.
 
 ## RDKIT version
 
