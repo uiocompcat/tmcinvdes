@@ -70,6 +70,13 @@ def parse_args(arg_list: list = None) -> argparse.Namespace:
         help="Directory with .CSV data files of labeled, included TMCs.",
     )
     parser.add_argument(
+        "--labeling",
+        "-l",
+        choices=["DFT", "isolated_ligands"],  # TODO support mixed?
+        type=str,
+        default="DFT",
+    )
+    parser.add_argument(
         "--output_dir",
         "-o",
         type=Path,
@@ -441,11 +448,219 @@ def sample_bidentate(df_input: pd.DataFrame) -> tuple[plt.figure, pd.DataFrame]:
     return df_total, fig
 
 
+def sample_isolated_ligands(
+    df_input: pd.DataFrame, denticity: str
+) -> tuple[plt.figure, pd.DataFrame]:
+    """Sample ligands from labeled, included TMCs based on log P and G
+    parameter of the isolated ligand descriptors.
+
+    Args:
+        df_input (pd.DataFrame): the complete set of labeled, included homoleptic TMCs with ligands.
+        denticity (str): the denticity shared by all the ligands in the input dataframe.
+
+    Returns:
+        The DataFrame of the selected instances from the input dataframe.
+        The Figure object which may or may not be written to file based on xtent.
+    """
+    # Number of samples to take in each region:
+    n_samples = 20
+    # Small numbers to set the bounding boxes of sampling regions as quantiles of the dataset:
+    m = 0.0
+    n = 0.1  # m=0.0 and n=0.1 represents the lower and upper 10% of a given range.
+    quantile_points = [
+        m,
+        m + n,
+        0.5,
+        1.0 - (n + m),
+        1.0 - m,
+    ]
+    col1 = "log P"
+    col2 = "G parameter"
+
+    mapper, extremes = set_boundaries_quantiles_isolated_ligands(
+        df_input, quantile_points
+    )
+    log_ps = df_input[col1].to_numpy()
+    g_params = df_input[col2].to_numpy()
+    fig, ax = plt.subplots(figsize=(12, 6))
+    ax.scatter(g_params, log_ps, label="Raw data", color="k")
+    df_total = pd.DataFrame([], columns=df_input.columns)
+
+    for key, limits in mapper.items():
+        df_region = df_input[
+            df_input[col2].between(limits[0][0], limits[0][1], inclusive="both")
+            & df_input[col1].between(limits[1][0], limits[1][1], inclusive="both")
+        ]
+
+        df_sample = df_region.sample(n_samples, random_state=1)
+        df_sample = df_sample.reset_index(drop=True)
+
+        if key.startswith("center"):
+            sampling_region = "Center"
+        elif key == "high_log_p":
+            sampling_region = "High log P"
+        elif key == "low_log_p":
+            sampling_region = "Low log P"
+        elif key == "high_g_param":
+            sampling_region = "High G parameter"
+        elif key == "low_g_param":
+            sampling_region = "Low G parameter"
+        print(sampling_region)
+        df_sample["Sampling region"] = [f"{sampling_region}"] * len(df_sample)
+        df_total = pd.concat([df_total, df_sample])
+    for sampling_region in df_total["Sampling region"].unique():
+        df_sample = df_total[df_total["Sampling region"] == sampling_region]
+        ax.scatter(
+            df_sample[col2],
+            df_sample[col1],
+            label=f"{sampling_region}",
+            s=80,
+        )
+    min_g_param = extremes[0][0]
+    max_g_param = extremes[0][1]
+    delta_g_param = (max_g_param - min_g_param) * 0.05
+    ax.set_xlim([min_g_param - delta_g_param, max_g_param + delta_g_param])
+    ax.set(
+        xlabel="log $P$",
+        ylabel="$G$ (%)",
+        title="",
+    )
+
+    ax.legend()
+    plt.show()
+    if denticity == "monodentate":
+        df_total = df_total.drop_duplicates(subset=["Ligand ID"])
+    elif denticity == "bidentate":
+        df_total = df_total.drop_duplicates(subset=["Ligand ID", "Isomer"])
+
+    return df_total, fig
+
+
+def set_boundaries_quantiles_isolated_ligands(
+    df: pd.DataFrame, quantile_points: list
+) -> tuple[dict, list]:
+    """Set the boundary boxes of the regions in log P-G space to sample ligands
+    from.
+
+    Args:
+        df (pd.DataFrame): dataframe with log P and G parameter data.
+        quantile_points (list): relative points to calculate boundary boxes based on data.
+
+    Returns:
+        The sampling region boundaries as a dict.
+        The extremal values of the data points as a list of lists of floats.
+    """
+
+    col1 = "log P"
+    col2 = "G parameter"
+    log_ps = df[col1]  # replaces HOMO-LUMO gaps
+    g_params = df[col2]  # replaces metal center charges
+
+    extremes = [
+        [g_params.min(), g_params.max()],
+        [log_ps.min(), log_ps.max()],
+    ]
+
+    log_p_quantiles = np.quantile(log_ps, quantile_points)
+    min_log_p = log_ps.min()
+    max_log_p = log_ps.max()
+    print(f"Smallest to greatest log P: [{min_log_p}, {max_log_p}]")
+    min_log_p = log_p_quantiles[0]
+    max_log_p = log_p_quantiles[4]
+    quant_1_log_p = log_p_quantiles[1]
+    quant_3_log_p = log_p_quantiles[3]
+    mid_log_p = log_p_quantiles[2]
+    inner_radius_log_p = (
+        max(
+            [
+                mid_log_p - quant_1_log_p,
+                quant_3_log_p - mid_log_p,
+            ]
+        )
+        / 4
+    )
+
+    g_param_quantiles = np.quantile(g_params, quantile_points)
+    min_g_param = g_params.min()
+    max_g_param = g_params.max()
+    print(f"Smallest to greatest $G$-parameter: [{min_g_param}, {max_g_param}]")
+    min_g_param = g_param_quantiles[0]
+    max_g_param = g_param_quantiles[4]
+    quant_1_g_param = g_param_quantiles[1]
+    quant_3_g_param = g_param_quantiles[3]
+    mid_g_param = g_param_quantiles[2]
+    inner_radius_g_param = (
+        max(
+            [
+                mid_g_param - quant_1_g_param,
+                quant_3_g_param - mid_g_param,
+            ]
+        )
+        / 4
+    )
+
+    ranges_low_log_ps = [min_log_p, quant_1_log_p]
+    ranges_high_log_ps = [quant_3_log_p, max_log_p]
+    ranges_inner_log_ps_lower = [
+        mid_log_p - inner_radius_log_p,
+        mid_log_p,
+    ]
+    ranges_inner_log_ps_higher = [
+        mid_log_p,
+        mid_log_p + inner_radius_log_p,
+    ]
+    ranges_inner_log_ps = [
+        quant_1_log_p,
+        quant_3_log_p,
+    ]
+
+    ranges_low_g_params = [min_g_param, quant_1_g_param]
+    ranges_high_g_params = [quant_3_g_param, max_g_param]
+    ranges_inner_g_params_lower = [
+        mid_g_param - inner_radius_g_param,
+        mid_g_param,
+    ]
+    ranges_inner_g_params_higher = [
+        mid_g_param,
+        mid_g_param + inner_radius_g_param,
+    ]
+    ranges_inner_g_params = [
+        quant_1_g_param,
+        quant_3_g_param,
+    ]
+
+    mapper = {
+        "high_g_param": (ranges_high_g_params, ranges_inner_log_ps),
+        "low_g_param": (ranges_low_g_params, ranges_inner_log_ps),
+        "high_log_p": (ranges_inner_g_params, ranges_high_log_ps),
+        "low_log_p": (ranges_inner_g_params, ranges_low_log_ps),
+        "center_hi_log_p_hi_g_param": (
+            ranges_inner_g_params_higher,
+            ranges_inner_log_ps_higher,
+        ),
+        "center_lo_log_p_hi_g_param": (
+            ranges_inner_g_params_higher,
+            ranges_inner_log_ps_lower,
+        ),
+        "center_lo_log_p_lo_g_param": (
+            ranges_inner_g_params_lower,
+            ranges_inner_log_ps_lower,
+        ),
+        "center_hi_log_p_lo_g_param": (
+            ranges_inner_g_params_lower,
+            ranges_inner_log_ps_higher,
+        ),
+    }
+
+    return mapper, extremes
+
+
 if __name__ == "__main__":
     args = parse_args()
     isomer_config = args.configuration
     denticity = args.denticity
     xtent = args.xtent
+    labeling = args.labeling
     input_dir = os.path.abspath(args.input_dir)
     output_dir = os.path.abspath(args.output_dir)
 
@@ -453,10 +668,12 @@ if __name__ == "__main__":
     if denticity == "monodentate":
         input_file = os.path.join(input_dir, "uncond_mono-min15k-labeled-included.csv")
         output_csv_file = os.path.join(
-            output_dir, "uncond_mono-min15k-labeled-included-sampled_for_cond_mono.csv"
+            output_dir,
+            f"uncond_mono-min15k-labeled-included-{labeling}-sampled_for_cond_mono.csv",
         )
         output_png_file = os.path.join(
-            output_dir, "uncond_mono-min15k-labeled-included-sampled_for_cond_mono.png"
+            output_dir,
+            f"uncond_mono-min15k-labeled-included-{labeling}-sampled_for_cond_mono.png",
         )
         columns = [
             "Ligand ID",
@@ -474,11 +691,11 @@ if __name__ == "__main__":
         input_file = os.path.join(input_dir, "uncond_bi-min10k-labeled-included.csv")
         output_csv_file = os.path.join(
             output_dir,
-            f"uncond_bi-min10k-labeled-included-sampled_for_cond_bi_{isomer_config}.csv",
+            f"uncond_bi-min10k-labeled-included-{labeling}-sampled_for_cond_bi_{isomer_config}.csv",
         )
         output_png_file = os.path.join(
             output_dir,
-            f"uncond_bi-min10k-labeled-included-sampled_for_cond_bi_{isomer_config}.png",
+            f"uncond_bi-min10k-labeled-included-{labeling}-sampled_for_cond_bi_{isomer_config}.png",
         )
         columns = [
             "Ligand ID",
@@ -491,11 +708,15 @@ if __name__ == "__main__":
 
     df_input = pd.read_csv(input_file)
 
-    # Perform sampling and plotting:
-    if denticity == "monodentate":
-        df_output, fig = sample_monodentate(df_input)
-    elif denticity == "bidentate":
-        df_output, fig = sample_bidentate(df_input)
+    if labeling == "DFT":
+        # Perform sampling and plotting:
+        if denticity == "monodentate":
+            df_output, fig = sample_monodentate(df_input)
+        elif denticity == "bidentate":
+            df_output, fig = sample_bidentate(df_input)
+    elif labeling == "isolated_ligands":
+        columns += ["log P", "G parameter"]
+        df_output, fig = sample_isolated_ligands(df_input, denticity)
 
     # Modify process based on xtent:
     if xtent == "test":
