@@ -71,7 +71,7 @@ def get_connection_ids(row, df_stable):
     return connection_ids
 
 
-def _smarts_filter(mol: Chem.rdchem.Mol, connect_ids: list[int]):
+def _smarts_filter(mol, connect_ids):
     """Helper function to find various exceptions to the connection points.
 
     Currently carbenes and sylenes are detected here. For these we use a
