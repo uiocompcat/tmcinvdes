@@ -6,9 +6,9 @@ Public repository for the preprint ["Deep Generative Model for the Dual-Objectiv
 
 <img align="center" src="concept_overview.png" alt="Inverse Design of Metal Complexes" width="800"/>
 
-# The code used to train the JT-VAE models and generate ligands can be found at: [JT-VAE-tmcinvdes](https://github.com/Strandgaard96/JT-VAE-tmcinvdes).
-
 ## Code
+
+**The code used to train the JT-VAE models and generate ligands can be found at: [JT-VAE-tmcinvdes](https://github.com/Strandgaard96/JT-VAE-tmcinvdes).**
 
 Follow the environment [setup instructions](/environment/README.md) to install all the dependencies of the code in this repository.
 The code relies on a local download of the [tmQMg-L](https://github.com/hkneiding/tmQMg-L.git) repository and must therefore be cloned into a local folder.
