@@ -13,7 +13,10 @@ from pathlib import Path
 import pandas as pd
 from rdkit import Chem
 
-from tmcinvdes.ligand_generation.utils import process_substitute_attachment_points
+from tmcinvdes.ligand_generation.utils import (
+    process_substitute_attachment_points,
+    process_substitute_attachment_points_bidentate,
+)
 from tmcinvdes.structure_generation.molsimplify_tools import (
     add_ligand_from_smiles,
     get_existing_ligand_names,
@@ -94,7 +97,7 @@ def batch_add_ligands(df_ligands: pd.DataFrame, start: int):
         )
 
 
-def batch_add_monodentate_optimized_ligands(df_ligands: pd.DataFrame, start: int):
+def batch_add_optimized_ligands(df_ligands: pd.DataFrame, denticity: str, start: int):
     """Simplify the ligand addtion process by checking for pre-existing ligands
     only once per batch.
 
@@ -103,6 +106,7 @@ def batch_add_monodentate_optimized_ligands(df_ligands: pd.DataFrame, start: int
     Args:
         df_ligands (pd.DataFrame): the input dataframe corresponding to stage 11 with ligands to
         add.
+        denticity (str): the denticity of all the optimized ligands.
         start (int): offset index if the input dataframe was already partly processed.
     """
     extant_ligands = set(get_existing_ligand_names())
@@ -113,15 +117,35 @@ def batch_add_monodentate_optimized_ligands(df_ligands: pd.DataFrame, start: int
         if ligand_id in extant_ligands:
             continue
         print(f"{i}: {ligand_id}")
+        valid = False
         df_temp = df_ligands[df_ligands["Optimized ligand ID"] == ligand_id]
         encoded_smiles = df_temp["Optimized encoded SMILES"].values[0]
         encoded_mol = Chem.MolFromSmiles(encoded_smiles)
-        decoded_mol, connection_id = process_substitute_attachment_points(encoded_mol)
-        decoded_smiles = Chem.MolToSmiles(decoded_mol)
-
-        add_ligand_from_smiles(
-            decoded_smiles, ligand_id, [connection_id], pre_checked=pre_checked
-        )
+        if denticity == "monodentate":
+            decoded_mol, connection_id = process_substitute_attachment_points(
+                encoded_mol
+            )
+            connection_ids = [connection_id]
+        elif denticity == "bidentate":
+            (
+                decoded_mol,
+                connection_ids,
+            ) = process_substitute_attachment_points_bidentate(encoded_mol)
+        if decoded_mol is None:
+            valid = False
+            print(
+                f"Failed to process substitute attachment points of encoded {ligand_id}."
+            )
+            print(encoded_smiles)
+            print("")
+            continue
+        else:
+            decoded_smiles = Chem.MolToSmiles(decoded_mol)
+            valid = True
+        if valid:
+            add_ligand_from_smiles(
+                decoded_smiles, ligand_id, connection_ids, pre_checked=pre_checked
+            )
 
 
 if __name__ == "__main__":
@@ -129,8 +153,9 @@ if __name__ == "__main__":
     ligands_file = str(args.input_file)
     df_ligands = pd.read_csv(ligands_file)
     start = int(args.start)
+    denticity = args.denticity
 
-    if args.optimized and (args.denticity == "monodentate"):
-        batch_add_monodentate_optimized_ligands(df_ligands, start)
+    if args.optimized:
+        batch_add_optimized_ligands(df_ligands, denticity, start)
     else:
         batch_add_ligands(df_ligands, start)

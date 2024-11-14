@@ -21,7 +21,7 @@ import pandas as pd
 
 from tmcinvdes.structure_generation.batch_add_ligands import (
     batch_add_ligands,
-    batch_add_monodentate_optimized_ligands,
+    batch_add_optimized_ligands,
 )
 from tmcinvdes.structure_generation.molsimplify_tools import run_bash
 
@@ -249,8 +249,7 @@ if __name__ == "__main__":
     if args.optimized:
         tmp_subdir = "12_cond-TMC"
         ligand_id_key = "Optimized ligand ID"
-        if denticity == "monodentate":
-            batch_add_monodentate_optimized_ligands(df_input, 0)
+        batch_add_optimized_ligands(df_input, denticity, 0)
     else:
         tmp_subdir = "06_uncond-TMC"
         ligand_id_key = "Ligand ID"
@@ -372,69 +371,66 @@ if __name__ == "__main__":
         # Build homoleptic TMCs (cis and trans) and record XYZ.
         if offset is None:
             xyzs = []
-        for ligand_id in df_input[ligand_id_key].to_numpy():
-            # Build cis TMC.
-            if offset_isomer in [None, "trans"]:
-                offset_isomer = "cis"
-                cis_xyz, cis_status = build_tmc(
-                    geometry="sqp",
-                    metal_center="Ir",
-                    ligand_names=[ligand_id, ligand_id + "_flipped"],
-                )
 
-                if cis_xyz is not None:
-                    cis_xyz_lines = cis_xyz.split("\n")
-                    cis_xyz_lines[1] = ligand_id + "-cis"
-                    cis_xyz = "\n".join(cis_xyz_lines)
+        if (
+            args.optimized
+        ):  # All successful isomers of the bidentate TMCs will be DFT-labeled.
+            for ligand_id in df_input[ligand_id_key].to_numpy():
+                for isomer in ["cis", "trans"]:
+                    if isomer == "cis":
+                        ligand_names = [ligand_id, ligand_id + "_flipped"]
+                    if isomer == "trans":
+                        ligand_names = [ligand_id, ligand_id]
+                    xyz, status = build_tmc(
+                        geometry="sqp",
+                        metal_center="Ir",
+                        ligand_names=ligand_names,
+                    )
+                    if xyz is not None:
+                        xyz_lines = xyz.split("\n")
+                        xyz_lines[1] = f"{ligand_id}-{isomer}"
+                        xyz = "\n".join(xyz_lines)
+                    df_temp = pd.DataFrame(
+                        data={
+                            ligand_id_key: [ligand_id],
+                            "Isomer": isomer,
+                            "TMC assembly status": [status],
+                            "XYZ": [xyz],
+                        }
+                    )
+                    df_progress = update_progress_df_and_file(
+                        df_progress, df_temp, progress_file
+                    )
 
-            df_temp = pd.DataFrame(
-                data={
-                    ligand_id_key: [ligand_id],
-                    "Isomer": [offset_isomer],
-                    "TMC assembly status": [cis_status],
-                    "XYZ": [cis_xyz],
-                }
-            )
-            df_progress = update_progress_df_and_file(
-                df_progress, df_temp, progress_file
-            )
+                    # Skip to next isomer/ligand if build status is bad.
+                    if status == "bad":
+                        continue
 
-            # Skip to next ligand if build status is bad.
-            if cis_status == "bad":
-                offset_isomer = "trans"
-                df_temp = pd.DataFrame(
-                    data={
-                        ligand_id_key: [ligand_id],
-                        "Isomer": [offset_isomer],
-                        "TMC assembly status": ["skipped"],
-                        "XYZ": [None],
-                    }
-                )
-                df_progress = update_progress_df_and_file(
-                    df_progress, df_temp, progress_file
-                )
-                continue
+                    # Append XYZs if building succeeded.
+                    print(f"Assembled homoleptic {isomer} TMC with ligand {ligand_id}.")
+                    xyzs.append(xyz)
+        else:  # Only TMCs where both cis and trans isomers succeed in assembly will be DFT-labeled.
+            for ligand_id in df_input[ligand_id_key].to_numpy():
+                # Build cis TMC.
+                if offset_isomer in [None, "trans"]:
+                    offset_isomer = "cis"
+                    cis_xyz, cis_status = build_tmc(
+                        geometry="sqp",
+                        metal_center="Ir",
+                        ligand_names=[ligand_id, ligand_id + "_flipped"],
+                    )
 
-            # Build trans TMC.
-            if offset_isomer == "cis":
-                offset_isomer = "trans"
-                trans_xyz, trans_status = build_tmc(
-                    geometry="sqp",
-                    metal_center="Ir",
-                    ligand_names=[ligand_id, ligand_id],
-                )
-
-                if trans_xyz is not None:
-                    trans_xyz_lines = trans_xyz.split("\n")
-                    trans_xyz_lines[1] = ligand_id + "-trans"
-                    trans_xyz = "\n".join(trans_xyz_lines)
+                    if cis_xyz is not None:
+                        cis_xyz_lines = cis_xyz.split("\n")
+                        cis_xyz_lines[1] = ligand_id + "-cis"
+                        cis_xyz = "\n".join(cis_xyz_lines)
 
                 df_temp = pd.DataFrame(
                     data={
                         ligand_id_key: [ligand_id],
                         "Isomer": [offset_isomer],
-                        "TMC assembly status": [trans_status],
-                        "XYZ": [trans_xyz],
+                        "TMC assembly status": [cis_status],
+                        "XYZ": [cis_xyz],
                     }
                 )
                 df_progress = update_progress_df_and_file(
@@ -442,13 +438,55 @@ if __name__ == "__main__":
                 )
 
                 # Skip to next ligand if build status is bad.
-                if trans_status == "bad":
+                if cis_status == "bad":
+                    offset_isomer = "trans"
+                    df_temp = pd.DataFrame(
+                        data={
+                            ligand_id_key: [ligand_id],
+                            "Isomer": [offset_isomer],
+                            "TMC assembly status": ["skipped"],
+                            "XYZ": [None],
+                        }
+                    )
+                    df_progress = update_progress_df_and_file(
+                        df_progress, df_temp, progress_file
+                    )
                     continue
 
-            # Append XYZs if building succeeded for both cis and trans isomerism.
-            print(f"Assembled both cis and trans TMCs with ligand {ligand_id}.")
-            xyzs.append(cis_xyz)
-            xyzs.append(trans_xyz)
+                # Build trans TMC.
+                if offset_isomer == "cis":
+                    offset_isomer = "trans"
+                    trans_xyz, trans_status = build_tmc(
+                        geometry="sqp",
+                        metal_center="Ir",
+                        ligand_names=[ligand_id, ligand_id],
+                    )
+
+                    if trans_xyz is not None:
+                        trans_xyz_lines = trans_xyz.split("\n")
+                        trans_xyz_lines[1] = ligand_id + "-trans"
+                        trans_xyz = "\n".join(trans_xyz_lines)
+
+                    df_temp = pd.DataFrame(
+                        data={
+                            ligand_id_key: [ligand_id],
+                            "Isomer": [offset_isomer],
+                            "TMC assembly status": [trans_status],
+                            "XYZ": [trans_xyz],
+                        }
+                    )
+                    df_progress = update_progress_df_and_file(
+                        df_progress, df_temp, progress_file
+                    )
+
+                    # Skip to next ligand if build status is bad.
+                    if trans_status == "bad":
+                        continue
+
+                # Append XYZs if building succeeded for both cis and trans isomerism.
+                print(f"Assembled both cis and trans TMCs with ligand {ligand_id}.")
+                xyzs.append(cis_xyz)
+                xyzs.append(trans_xyz)
 
     # Modify output based on xtent.
     if xtent == "full":
