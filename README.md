@@ -1,6 +1,6 @@
 # tmcinvdes
 
-Public repository for the preprint ["Deep Generative Model for the Dual-Objective Inverse Design of Metal Complexes."](https://doi.org/10.26434/chemrxiv-2024-mzs7b)
+Repository for the preprint ["Deep Generative Model for the Dual-Objective Inverse Design of Metal Complexes."](https://doi.org/10.26434/chemrxiv-2024-mzs7b)
 
 `tmcinvdes` will provide code and data from our research around Junction Tree Variational Autoencoder (JT-VAE) models that can generate metal ligands for transition metal complexes (TMCs). TMCs are used in industrial catalytic processes, anticancer therapies, and energy transformations. By labeling ligands with DFT-calculated target properties, conditional generative models can be trained and harnessed, optimizing metal ligands directionally in the target property space to discover novel **TMC**s by **inv**erse **des**ign.
 
@@ -8,7 +8,7 @@ Public repository for the preprint ["Deep Generative Model for the Dual-Objectiv
 
 ## Code
 
-**The code used to train the JT-VAE models and generate ligands can be found at: [JT-VAE-tmcinvdes](https://github.com/Strandgaard96/JT-VAE-tmcinvdes).**
+**The code used to train the JT-VAE models and generate ligands are found at: [JT-VAE-tmcinvdes](https://github.com/Strandgaard96/JT-VAE-tmcinvdes).**
 
 Follow the environment [setup instructions](/environment/README.md) to install all the dependencies of the code in this repository.
 The code relies on a local download of the [tmQMg-L](https://github.com/hkneiding/tmQMg-L.git) repository and must therefore be cloned into a local folder.
@@ -27,9 +27,9 @@ Contains the ORCA input file and parser scripts to label the generated ligands w
 
 [Analysis](/tmcinvdes/analysis)
 
-Contains the code for analyzing and processing data.
+Contains the SA score code and the code for excluding outliers.
 
-For nominal runs of the present code, shared both as explicit usage examples and to test reproducibility, see the [detailed workflow](DETAILS.md).
+For a description of the workflow structure see the [detailed workflow](DETAILS.md).
 
 ### Citation
 
@@ -48,4 +48,4 @@ If you find our work useful, please cite our article:
 
 ### Work in Progress
 
-This repository represents work in progress, meaning that data and code will be gradually added.
+This repo will be gradually updated with code and data as the preprint goes through review.
