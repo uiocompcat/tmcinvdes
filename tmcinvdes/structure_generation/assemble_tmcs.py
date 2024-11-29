@@ -92,7 +92,13 @@ def parse_args(arg_list: list = None) -> argparse.Namespace:
     return parser.parse_args(arg_list)
 
 
-def build_tmc(geometry: str, metal_center: str, ligand_names: list) -> tuple:
+def build_tmc(
+    geometry: str,
+    metal_center: str,
+    ligand_names: list,
+    rundir: str = "run",
+    oxstate: int = 1,
+) -> tuple:
     """Build a TMC from ligands in the local ligand library.
 
     Args:
@@ -106,7 +112,7 @@ def build_tmc(geometry: str, metal_center: str, ligand_names: list) -> tuple:
         status (str): the status of the complex generation run.
     """
     # Remove previous (if any) molSimplify operation directory.
-    shutil.rmtree("Runs/", ignore_errors=True)
+    shutil.rmtree(f"Runs/{rundir}", ignore_errors=True)
 
     parameters = [
         "-skipANN True",
@@ -114,8 +120,9 @@ def build_tmc(geometry: str, metal_center: str, ligand_names: list) -> tuple:
         "-geometry " + geometry,
         "-lig " + ",".join(ligand_names),
         "-ligocc " + ",".join(["1" for _ in ligand_names]),
-        "-name run",
+        f"-name {rundir}",
         "-keepHs yes",
+        f"-oxstate {str(oxstate)}",
     ]
 
     output = run_bash(" ".join(["molsimplify", *parameters]))
@@ -126,7 +133,7 @@ def build_tmc(geometry: str, metal_center: str, ligand_names: list) -> tuple:
     else:
         status = "good"
     try:
-        with open("Runs/run/run/run.xyz") as fh:
+        with open(f"Runs/{rundir}/{rundir}/{rundir}.xyz") as fh:
             xyz = fh.read()
     except Exception:
         xyz = None

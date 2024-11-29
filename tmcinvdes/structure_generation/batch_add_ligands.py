@@ -72,7 +72,9 @@ def parse_args(arg_list: list = None) -> argparse.Namespace:
     return parser.parse_args(arg_list)
 
 
-def batch_add_ligands(df_ligands: pd.DataFrame, start: int):
+def batch_add_ligands(
+    df_ligands: pd.DataFrame, start: int, denticity: str = "monodentate"
+):
     """Simplify the ligand addtion process by checking for pre-existing ligands
     only once per batch.
 
@@ -80,6 +82,7 @@ def batch_add_ligands(df_ligands: pd.DataFrame, start: int):
         df_ligands (pd.DataFrame): the input dataframe corresponding to stage 6 with ligands to
         add.
         start (int): offset index if the input dataframe was already partly processed.
+        denticity (str): the denticity of all the ligands in the input dataframe.
     """
     extant_ligands = set(get_existing_ligand_names())
     pre_checked = True
@@ -90,14 +93,38 @@ def batch_add_ligands(df_ligands: pd.DataFrame, start: int):
             continue
         print(f"{i}: {ligand_id}")
         df_temp = df_ligands[df_ligands["Ligand ID"] == ligand_id]
-        smiles = df_temp["Decoded SMILES"].values[0]
-        connection_ids = eval(df_temp["Connection IDs"].values[0])
+        if "Decoded SMILES" in df_temp.columns:
+            decoded_smiles = df_temp["Decoded SMILES"].values[0]
+            connection_ids = eval(df_temp["Connection IDs"].values[0])
+        else:
+            encoded_smiles = df_temp["Encoded SMILES"].values[0]
+            encoded_mol = Chem.MolFromSmiles(encoded_smiles)
+            if denticity == "monodentate":
+                decoded_mol, connection_id = process_substitute_attachment_points(
+                    encoded_mol
+                )
+                connection_ids = [connection_id]
+            elif denticity == "bidentate":
+                (
+                    decoded_mol,
+                    connection_ids,
+                ) = process_substitute_attachment_points_bidentate(encoded_mol)
+            if decoded_mol is None:
+                print(
+                    f"Failed to process substitute attachment points of encoded {ligand_id}."
+                )
+                print(encoded_smiles)
+                print("")
+                continue
+            else:
+                decoded_smiles = Chem.MolToSmiles(decoded_mol)
+
         add_ligand_from_smiles(
-            smiles, ligand_id, connection_ids, pre_checked=pre_checked
+            decoded_smiles, ligand_id, connection_ids, pre_checked=pre_checked
         )
 
 
-def batch_add_optimized_ligands(df_ligands: pd.DataFrame, denticity: str, start: int):
+def batch_add_optimized_ligands(df_ligands: pd.DataFrame, start: int, denticity: str):
     """Simplify the ligand addtion process by checking for pre-existing ligands
     only once per batch.
 
@@ -106,8 +133,8 @@ def batch_add_optimized_ligands(df_ligands: pd.DataFrame, denticity: str, start:
     Args:
         df_ligands (pd.DataFrame): the input dataframe corresponding to stage 11 with ligands to
         add.
-        denticity (str): the denticity of all the optimized ligands.
         start (int): offset index if the input dataframe was already partly processed.
+        denticity (str): the denticity of all the optimized ligands.
     """
     extant_ligands = set(get_existing_ligand_names())
     pre_checked = True
@@ -156,6 +183,6 @@ if __name__ == "__main__":
     denticity = args.denticity
 
     if args.optimized:
-        batch_add_optimized_ligands(df_ligands, denticity, start)
+        batch_add_optimized_ligands(df_ligands, start, denticity)
     else:
-        batch_add_ligands(df_ligands, start)
+        batch_add_ligands(df_ligands, start, denticity)
