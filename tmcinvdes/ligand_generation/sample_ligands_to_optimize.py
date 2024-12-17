@@ -84,6 +84,14 @@ def parse_args(arg_list: list = None) -> argparse.Namespace:
         help="Directory for .CSV data files of sampled ligands to optimize, and for plot images.",
     )
     parser.add_argument(
+        "--stage",
+        "-s",
+        choices=["08b", "01"],
+        type=str,
+        default="08b",
+        help="Dataset stage from which to sample.",
+    )
+    parser.add_argument(
         "--xtent",
         "-x",
         choices=["full", "test"],
@@ -475,15 +483,15 @@ def sample_isolated_ligands(
         1.0 - m,
     ]
     col1 = "log P"
-    col2 = "G parameter"
+    col2 = "Exact cone angle ($^\circ$)"
 
     mapper, extremes = set_boundaries_quantiles_isolated_ligands(
         df_input, quantile_points
     )
     log_ps = df_input[col1].to_numpy()
-    g_params = df_input[col2].to_numpy()
+    cone_angles = df_input[col2].to_numpy()
     fig, ax = plt.subplots(figsize=(12, 6))
-    ax.scatter(g_params, log_ps, label="Raw data", color="k")
+    ax.scatter(cone_angles, log_ps, label="Raw data", color="k")
     df_total = pd.DataFrame([], columns=df_input.columns)
 
     for key, limits in mapper.items():
@@ -501,10 +509,10 @@ def sample_isolated_ligands(
             sampling_region = "High log P"
         elif key == "low_log_p":
             sampling_region = "Low log P"
-        elif key == "high_g_param":
-            sampling_region = "High G parameter"
-        elif key == "low_g_param":
-            sampling_region = "Low G parameter"
+        elif key == "high_cone_angle":
+            sampling_region = "High exact cone angle"
+        elif key == "low_cone_angle":
+            sampling_region = "Low exact cone angle"
         print(sampling_region)
         df_sample["Sampling region"] = [f"{sampling_region}"] * len(df_sample)
         df_total = pd.concat([df_total, df_sample])
@@ -516,22 +524,25 @@ def sample_isolated_ligands(
             label=f"{sampling_region}",
             s=80,
         )
-    min_g_param = extremes[0][0]
-    max_g_param = extremes[0][1]
-    delta_g_param = (max_g_param - min_g_param) * 0.05
-    ax.set_xlim([min_g_param - delta_g_param, max_g_param + delta_g_param])
+    min_cone_angle = extremes[0][0]
+    max_cone_angle = extremes[0][1]
+    delta_cone_angle = (max_cone_angle - min_cone_angle) * 0.05
+    ax.set_xlim([min_cone_angle - delta_cone_angle, max_cone_angle + delta_cone_angle])
     ax.set(
         xlabel="log $P$",
-        ylabel="$G$ (%)",
+        ylabel="Exact cone angle ($^\circ$)",
         title="",
     )
 
     ax.legend()
     plt.show()
-    if denticity == "monodentate":
-        df_total = df_total.drop_duplicates(subset=["Ligand ID"])
-    elif denticity == "bidentate":
-        df_total = df_total.drop_duplicates(subset=["Ligand ID", "Isomer"])
+    try:
+        if denticity == "monodentate":
+            df_total = df_total.drop_duplicates(subset=["Ligand ID"])
+        elif denticity == "bidentate":
+            df_total = df_total.drop_duplicates(subset=["Ligand ID", "Isomer"])
+    except Exception:
+        df_total = df_total.drop_duplicates(subset=["tmQMg-L ligand ID"])
 
     return df_total, fig
 
@@ -539,11 +550,11 @@ def sample_isolated_ligands(
 def set_boundaries_quantiles_isolated_ligands(
     df: pd.DataFrame, quantile_points: list
 ) -> tuple[dict, list]:
-    """Set the boundary boxes of the regions in log P-G space to sample ligands
-    from.
+    """Set the boundary boxes of the regions in log P-exact cone angle space to
+    sample ligands from.
 
     Args:
-        df (pd.DataFrame): dataframe with log P and G parameter data.
+        df (pd.DataFrame): dataframe with log P and exact cone angle data.
         quantile_points (list): relative points to calculate boundary boxes based on data.
 
     Returns:
@@ -552,12 +563,12 @@ def set_boundaries_quantiles_isolated_ligands(
     """
 
     col1 = "log P"
-    col2 = "G parameter"
+    col2 = "Exact cone angle ($^\circ$)"
     log_ps = df[col1]  # replaces HOMO-LUMO gaps
-    g_params = df[col2]  # replaces metal center charges
+    cone_angles = df[col2]  # replaces metal center charges
 
     extremes = [
-        [g_params.min(), g_params.max()],
+        [cone_angles.min(), cone_angles.max()],
         [log_ps.min(), log_ps.max()],
     ]
 
@@ -580,20 +591,22 @@ def set_boundaries_quantiles_isolated_ligands(
         / 4
     )
 
-    g_param_quantiles = np.quantile(g_params, quantile_points)
-    min_g_param = g_params.min()
-    max_g_param = g_params.max()
-    print(f"Smallest to greatest $G$-parameter: [{min_g_param}, {max_g_param}]")
-    min_g_param = g_param_quantiles[0]
-    max_g_param = g_param_quantiles[4]
-    quant_1_g_param = g_param_quantiles[1]
-    quant_3_g_param = g_param_quantiles[3]
-    mid_g_param = g_param_quantiles[2]
-    inner_radius_g_param = (
+    cone_angle_quantiles = np.quantile(cone_angles, quantile_points)
+    min_cone_angle = cone_angles.min()
+    max_cone_angle = cone_angles.max()
+    print(
+        "Smallest to greatest Exact cone angle ($^\circ$): [{min_cone_angle}, {max_cone_angle}]"
+    )
+    min_cone_angle = cone_angle_quantiles[0]
+    max_cone_angle = cone_angle_quantiles[4]
+    quant_1_cone_angle = cone_angle_quantiles[1]
+    quant_3_cone_angle = cone_angle_quantiles[3]
+    mid_cone_angle = cone_angle_quantiles[2]
+    inner_radius_cone_angle = (
         max(
             [
-                mid_g_param - quant_1_g_param,
-                quant_3_g_param - mid_g_param,
+                mid_cone_angle - quant_1_cone_angle,
+                quant_3_cone_angle - mid_cone_angle,
             ]
         )
         / 4
@@ -614,40 +627,40 @@ def set_boundaries_quantiles_isolated_ligands(
         quant_3_log_p,
     ]
 
-    ranges_low_g_params = [min_g_param, quant_1_g_param]
-    ranges_high_g_params = [quant_3_g_param, max_g_param]
-    ranges_inner_g_params_lower = [
-        mid_g_param - inner_radius_g_param,
-        mid_g_param,
+    ranges_low_cone_angles = [min_cone_angle, quant_1_cone_angle]
+    ranges_high_cone_angles = [quant_3_cone_angle, max_cone_angle]
+    ranges_inner_cone_angles_lower = [
+        mid_cone_angle - inner_radius_cone_angle,
+        mid_cone_angle,
     ]
-    ranges_inner_g_params_higher = [
-        mid_g_param,
-        mid_g_param + inner_radius_g_param,
+    ranges_inner_cone_angles_higher = [
+        mid_cone_angle,
+        mid_cone_angle + inner_radius_cone_angle,
     ]
-    ranges_inner_g_params = [
-        quant_1_g_param,
-        quant_3_g_param,
+    ranges_inner_cone_angles = [
+        quant_1_cone_angle,
+        quant_3_cone_angle,
     ]
 
     mapper = {
-        "high_g_param": (ranges_high_g_params, ranges_inner_log_ps),
-        "low_g_param": (ranges_low_g_params, ranges_inner_log_ps),
-        "high_log_p": (ranges_inner_g_params, ranges_high_log_ps),
-        "low_log_p": (ranges_inner_g_params, ranges_low_log_ps),
-        "center_hi_log_p_hi_g_param": (
-            ranges_inner_g_params_higher,
+        "high_cone_angle": (ranges_high_cone_angles, ranges_inner_log_ps),
+        "low_cone_angle": (ranges_low_cone_angles, ranges_inner_log_ps),
+        "high_log_p": (ranges_inner_cone_angles, ranges_high_log_ps),
+        "low_log_p": (ranges_inner_cone_angles, ranges_low_log_ps),
+        "center_hi_log_p_hi_cone_angle": (
+            ranges_inner_cone_angles_higher,
             ranges_inner_log_ps_higher,
         ),
-        "center_lo_log_p_hi_g_param": (
-            ranges_inner_g_params_higher,
+        "center_lo_log_p_hi_cone_angle": (
+            ranges_inner_cone_angles_higher,
             ranges_inner_log_ps_lower,
         ),
-        "center_lo_log_p_lo_g_param": (
-            ranges_inner_g_params_lower,
+        "center_lo_log_p_lo_cone_angle": (
+            ranges_inner_cone_angles_lower,
             ranges_inner_log_ps_lower,
         ),
-        "center_hi_log_p_lo_g_param": (
-            ranges_inner_g_params_lower,
+        "center_hi_log_p_lo_cone_angle": (
+            ranges_inner_cone_angles_lower,
             ranges_inner_log_ps_higher,
         ),
     }
@@ -663,48 +676,92 @@ if __name__ == "__main__":
     labeling = args.labeling
     input_dir = os.path.abspath(args.input_dir)
     output_dir = os.path.abspath(args.output_dir)
+    stage = args.stage
 
-    # Modify parameters based on denticity:
-    if denticity == "monodentate":
-        input_file = os.path.join(input_dir, "uncond_mono-min15k-labeled-included.csv")
-        output_csv_file = os.path.join(
-            output_dir,
-            f"uncond_mono-min15k-labeled-included-{labeling}-sampled_for_cond_mono.csv",
-        )
-        output_png_file = os.path.join(
-            output_dir,
-            f"uncond_mono-min15k-labeled-included-{labeling}-sampled_for_cond_mono.png",
-        )
-        columns = [
-            "Ligand ID",
-            "Label ID",
-            "Labeled SMILES",
-            "HOMO-LUMO gap (Eh)",
-            "Metal center charge",
-            "XYZ",
-        ]
-    elif denticity == "bidentate":
-        if isomer_config == "":
-            isomer_config = "cis_trans"
-        elif isomer_config == "cistrans":
-            isomer_config = "cis_trans"
-        input_file = os.path.join(input_dir, "uncond_bi-min10k-labeled-included.csv")
-        output_csv_file = os.path.join(
-            output_dir,
-            f"uncond_bi-min10k-labeled-included-{labeling}-sampled_for_cond_bi_{isomer_config}.csv",
-        )
-        output_png_file = os.path.join(
-            output_dir,
-            f"uncond_bi-min10k-labeled-included-{labeling}-sampled_for_cond_bi_{isomer_config}.png",
-        )
-        columns = [
-            "Ligand ID",
-            "Isomer",
-            "Label ID",
-            "HOMO-LUMO gap (Eh)",
-            "Metal center charge",
-            "XYZ",
-        ]
+    if stage == "08b":
+        # Modify parameters based on denticity and labeling:
+        if denticity == "monodentate":
+            input_file = os.path.join(
+                input_dir, "uncond_mono-min15k-labeled-included.csv"
+            )
+            output_csv_file = os.path.join(
+                output_dir,
+                f"uncond_mono-min15k-labeled-included-{labeling}-sampled_for_cond_mono.csv",
+            )
+            output_png_file = os.path.join(
+                output_dir,
+                f"uncond_mono-min15k-labeled-included-{labeling}-sampled_for_cond_mono.png",
+            )
+            columns = [
+                "Ligand ID",
+                "Label ID",
+                "Labeled SMILES",
+                "HOMO-LUMO gap (Eh)",
+                "Metal center charge",
+                "XYZ",
+            ]
+        elif denticity == "bidentate":
+            if isomer_config == "":
+                isomer_config = "cis_trans"
+            elif isomer_config == "cistrans":
+                isomer_config = "cis_trans"
+            input_file = os.path.join(
+                input_dir, "uncond_bi-min10k-labeled-included.csv"
+            )
+            output_csv_file = os.path.join(
+                output_dir,
+                f"uncond_bi-min10k-labeled-included-{labeling}-sampled_for_cond_bi_{isomer_config}.csv",
+            )
+            output_png_file = os.path.join(
+                output_dir,
+                f"uncond_bi-min10k-labeled-included-{labeling}-sampled_for_cond_bi_{isomer_config}.png",
+            )
+            columns = [
+                "Ligand ID",
+                "Isomer",
+                "Label ID",
+                "HOMO-LUMO gap (Eh)",
+                "Metal center charge",
+                "XYZ",
+            ]
+    elif stage == "01":
+        # Modify parameters based on denticity and labeling:
+        if denticity == "monodentate":
+            input_file = os.path.join(input_dir, "isolated_ligands_01_tmQMg-L_mono.csv")
+            output_csv_file = os.path.join(
+                output_dir,
+                f"tmQMg-L_mono-{labeling}-sampled_for_cond_mono.csv",
+            )
+            output_png_file = os.path.join(
+                output_dir,
+                f"tmQMg-L_mono-{labeling}-sampled_for_cond_mono.png",
+            )
+            columns = [
+                "Ligand ID",
+                "Label ID",
+                "Labeled SMILES",
+                "HOMO-LUMO gap (Eh)",
+                "Metal center charge",
+                "XYZ",
+            ]
+        elif denticity == "bidentate":
+            input_file = os.path.join(input_dir, "isolated_ligands_01_tmQMg-L_bi.csv")
+            output_csv_file = os.path.join(
+                output_dir,
+                f"tmQMg-L_bi-{labeling}-sampled_for_cond_bi.csv",
+            )
+            output_png_file = os.path.join(
+                output_dir,
+                f"tmQMg-L_bi-{labeling}-sampled_for_cond_bi.png",
+            )
+            columns = [
+                "Ligand ID",
+                "Isomer",
+                "Label ID",
+                "HOMO-LUMO gap (Eh)",
+                "Metal center charge",
+                "XYZ",
+            ]
 
     df_input = pd.read_csv(input_file)
 
@@ -715,7 +772,7 @@ if __name__ == "__main__":
         elif denticity == "bidentate":
             df_output, fig = sample_bidentate(df_input)
     elif labeling == "isolated_ligands":
-        columns += ["log P", "G parameter"]
+        columns += ["log P", "Exact cone angle ($^\circ$)"]
         df_output, fig = sample_isolated_ligands(df_input, denticity)
 
     # Modify process based on xtent:
