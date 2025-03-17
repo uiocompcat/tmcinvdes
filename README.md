@@ -41,7 +41,7 @@ If you find our work useful, please cite our article:
   title     = {Deep Generative Model for the Dual-Objective Inverse Design of Metal Complexes},
   journal   = {ChemRxiv},
   volume    = {preprint},
-  doi       = {10.26434/chemrxiv-2024-mzs7b},
+  doi       = {10.26434/chemrxiv-2024-mzs7b-v2},
   year      = {2024},
 }
 ```
