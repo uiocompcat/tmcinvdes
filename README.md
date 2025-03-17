@@ -36,7 +36,7 @@ For a description of the workflow structure see the [detailed workflow](DETAILS.
 If you find our work useful, please cite our article:
 
 ```
-@article{Strandgaard:2022:ChemRxiv,
+@article{Strandgaard:2024:ChemRxiv,
   author    = {Magnus Strandgaard, Trond Linjordet, Hannes Kneiding, Arron Burnage, Ainara Nova, Jan Halborg Jensen, David Balcells}
   title     = {Deep Generative Model for the Dual-Objective Inverse Design of Metal Complexes},
   journal   = {ChemRxiv},
