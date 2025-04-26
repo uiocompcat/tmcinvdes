@@ -1,6 +1,7 @@
 # tmcinvdes
 
-Repository for the preprint ["Deep Generative Model for the Dual-Objective Inverse Design of Metal Complexes."](https://doi.org/10.26434/chemrxiv-2024-mzs7b)
+Repository for the publication ["A Deep Generative Model for the Inverse Design of Transition Metal Ligands and 
+Complexes"](https://pubs.acs.org/doi/10.1021/jacsau.5c00242)
 
 `tmcinvdes` will provide code and data from our research around Junction Tree Variational Autoencoder (JT-VAE) models that can generate metal ligands for transition metal complexes (TMCs). TMCs are used in industrial catalytic processes, anticancer therapies, and energy transformations. By labeling ligands with DFT-calculated target properties, conditional generative models can be trained and harnessed, optimizing metal ligands directionally in the target property space to discover novel **TMC**s by **inv**erse **des**ign.
 
@@ -45,7 +46,3 @@ If you find our work useful, please cite our article:
   year      = {2024},
 }
 ```
-
-### Work in Progress
-
-This repo will be gradually updated with code and data as the preprint goes through review.
